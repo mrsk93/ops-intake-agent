@@ -39,6 +39,9 @@ test-m5:
 test-m6:
 	uv run pytest -q tests/unit/test_sop_domain.py tests/integration/test_retrieval.py
 
+test-m7:
+	uv run pytest -q tests/workflow tests/integration/test_workflow_runs.py
+
 test:
 	uv run pytest -q
 

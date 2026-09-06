@@ -2,7 +2,7 @@
 
 Ops Intake Agent is a production-shaped portfolio demonstration of governed document intake. AI is limited to classification and structured extraction; deterministic policy, evidence and a human control any future operational write.
 
-## M0–M5 local quickstart
+## M0–M7 local quickstart
 
 Requirements: Python 3.12, uv 0.12.2, Node 22, pnpm 10.33.0, and Docker Compose for the full stack.
 
@@ -32,3 +32,10 @@ operational tools or credentials.
 ## Commands
 
 See `Makefile` for lint, unit/security tests, migrations, seed/reset and Compose startup. CI runs fake-only checks and does not require an API key.
+
+M6 adds tenant-scoped versioned SOP ingestion/retrieval. M7 adds the typed
+LangGraph workflow through a persisted human-review interrupt. Unit tests use
+`InMemorySaver`; development/production wiring can open the PostgreSQL
+checkpointer with the separate setup helper in
+`packages/workflow/checkpoint.py`. LangGraph checkpoint tables are intentionally
+not part of the application Alembic chain.

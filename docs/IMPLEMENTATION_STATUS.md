@@ -78,10 +78,17 @@ Status: Implemented.
 
 ## M7 — Durable LangGraph workflow
 
-Status: In progress.
+Status: Implemented.
 
-- M6 is complete; typed graph state, node contracts and persisted review
-  interrupts are being added next.
+- Added typed checkpoint-safe graph state with stable `thread_id == intake_run_id`.
+- Added graph nodes through validation and the human review interrupt, with
+  retryable/reviewable/terminal error classification boundaries.
+- Added review payload allowlists that retain IDs, hashes, versions and concise
+  decisions but reject raw parser/model content from graph state.
+- Added PostgreSQL-backed checkpointer context management using the pinned
+  LangGraph package APIs; checkpointer-owned tables remain separate from
+  application Alembic migrations.
+- Added graph reconstruction/resume, stale-review and unsafe-state tests.
 
 ## Checks
 
@@ -94,15 +101,16 @@ Status: In progress.
 - `make test-m3`: passed; deterministic CSV/XLSX/email/OCR parser and evidence-map tests.
 - `make test-m4`: passed; 7 canonical-domain and validation tests.
 - `make test-m5`: passed; 11 extraction verification, fake-provider and optional-adapter tests.
-- `make test-m6`: pending until M7 closes the current implementation batch.
-- `make test`: passed; 43 tests, with the same 2 upstream Starlette/httpx deprecation warnings.
-- `alembic upgrade head` against temporary SQLite: passed; `0002_artifact_ingestion` is head.
+- `make test-m6`: passed; 5 deterministic SOP chunking and retrieval tests.
+- `make test-m7`: passed; 4 graph interrupt/restart and workflow-run isolation tests.
+- `uv lock --check`: passed after promoting the pinned LangGraph runtime dependencies.
+- `make test`: passed; 52 tests, with 1 existing upstream Starlette/anyio deprecation warning.
+- `alembic upgrade head` against temporary SQLite: passed; `0004_workflow_runs` is head.
 - Synthetic seed against temporary SQLite: passed.
 - `make dev`: not runnable locally because Docker is unavailable/permission denied; Compose remains the CI/hosted-runtime path.
 - No OpenAI API key, hosted model, OCR provider or operations system was used.
 
 ## Handoff boundary
 
-M0 through M6 are complete. M7 durable workflow work is in progress. Review UI,
-approval/execution, evaluation, security/operations hardening and portfolio
-release remain deferred to M8-M12.
+M0 through M7 are complete. Review UI, approval/execution, evaluation,
+security/operations hardening and portfolio release remain deferred to M8-M12.
