@@ -10,6 +10,8 @@ dependencies = [
   "dramatiq[redis]>=1.17,<2",
   "fastapi>=0.141,<1",
   "httpx>=0.28,<1",
+  "langgraph==1.2.11",
+  "langgraph-checkpoint-postgres==3.1.2",
   "PyJWT>=2.10,<3",
   "pydantic>=2.11,<3",
   "pydantic-settings>=2.10,<3",
@@ -23,8 +25,6 @@ dependencies = [
 
 [project.optional-dependencies]
 ai = [
-  "langgraph==1.2.11",
-  "langgraph-checkpoint-postgres==3.1.2",
   "openai==3.8.0",
 ]
 

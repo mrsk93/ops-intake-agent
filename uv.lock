@@ -640,6 +640,8 @@ dependencies = [
     { name = "dramatiq", extra = ["redis"] },
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "langgraph" },
+    { name = "langgraph-checkpoint-postgres" },
     { name = "pwdlib", extra = ["argon2"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -653,8 +655,6 @@ dependencies = [
 
 [package.optional-dependencies]
 ai = [
-    { name = "langgraph" },
-    { name = "langgraph-checkpoint-postgres" },
     { name = "openai" },
 ]
 
@@ -674,8 +674,8 @@ requires-dist = [
     { name = "dramatiq", extras = ["redis"], specifier = ">=1.17,<2" },
     { name = "fastapi", specifier = ">=0.141,<1" },
     { name = "httpx", specifier = ">=0.28,<1" },
-    { name = "langgraph", marker = "extra == 'ai'", specifier = "==1.2.11" },
-    { name = "langgraph-checkpoint-postgres", marker = "extra == 'ai'", specifier = "==3.1.2" },
+    { name = "langgraph", specifier = "==1.2.11" },
+    { name = "langgraph-checkpoint-postgres", specifier = "==3.1.2" },
     { name = "openai", marker = "extra == 'ai'", specifier = "==3.8.0" },
     { name = "pwdlib", extras = ["argon2"], specifier = ">=0.2,<1" },
     { name = "pydantic", specifier = ">=2.11,<3" },
