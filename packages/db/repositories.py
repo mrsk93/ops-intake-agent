@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.db.models import (
     Artifact,
+    IntakeRun,
     Membership,
     RetrievalHit,
     RetrievalRun,
@@ -205,6 +206,32 @@ class SopRepository:
             )
         )
         return result.scalar_one_or_none()
+
+
+class IntakeRunRepository:
+    """Workflow run records are always loaded with the caller's tenant predicate."""
+
+    async def get(
+        self, session: AsyncSession, *, tenant_id: str, intake_run_id: str
+    ) -> IntakeRun | None:
+        result = await session.execute(
+            select(IntakeRun).where(
+                IntakeRun.tenant_id == tenant_id,
+                IntakeRun.id == intake_run_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def list_for_tenant(
+        self, session: AsyncSession, *, tenant_id: str, limit: int = 100
+    ) -> list[IntakeRun]:
+        result = await session.execute(
+            select(IntakeRun)
+            .where(IntakeRun.tenant_id == tenant_id)
+            .order_by(IntakeRun.started_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars())
 
 
 def _metadata_scope(column, value: str | None):

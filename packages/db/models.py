@@ -94,6 +94,38 @@ class SopDocument(Base):
     )
 
 
+class IntakeRun(Base):
+    __tablename__ = "intake_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    source_channel: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="received")
+    graph_thread_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_request_reference: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    review_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    error_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "graph_thread_id", name="uq_intake_runs_tenant_thread"),
+        CheckConstraint(
+            "source_channel in ('upload', 'email', 'webhook', 'demo')",
+            name="ck_intake_runs_source_channel",
+        ),
+        CheckConstraint(
+            "status in ("
+            "'received', 'processing', 'review_required', "
+            "'review_received', 'failed', 'completed')",
+            name="ck_intake_runs_status",
+        ),
+        Index("ix_intake_runs_tenant_status", "tenant_id", "status", "started_at"),
+    )
+
+
 class SopChunk(Base):
     __tablename__ = "sop_chunks"
 
