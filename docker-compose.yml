@@ -54,6 +54,7 @@ services:
       OBJECT_STORAGE_ACCESS_KEY: minioadmin
       OBJECT_STORAGE_SECRET_KEY: minioadmin
       OBJECT_STORAGE_BUCKET: ops-intake-demo
+      ARTIFACT_STORAGE_PROVIDER: s3
       AUTH_JWT_SECRET: local-only-demo-secret-change-me
       ENABLE_DEMO_CONTROLS: "true"
       MODEL_PROVIDER: fake
@@ -78,6 +79,11 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/ops_intake
       REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_ACCESS_KEY: minioadmin
+      OBJECT_STORAGE_SECRET_KEY: minioadmin
+      OBJECT_STORAGE_BUCKET: ops-intake-demo
+      ARTIFACT_STORAGE_PROVIDER: s3
       AUTH_JWT_SECRET: local-only-demo-secret-change-me
       ENABLE_DEMO_CONTROLS: "true"
       MODEL_PROVIDER: fake
