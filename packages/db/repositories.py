@@ -1,9 +1,18 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from packages.db.models import Artifact, Membership, Tenant, User
+from packages.db.models import (
+    Artifact,
+    Membership,
+    RetrievalHit,
+    RetrievalRun,
+    SopChunk,
+    SopDocument,
+    Tenant,
+    User,
+)
 
 
 class IdentityRepository:
@@ -133,3 +142,72 @@ class ArtifactRepository:
             )
         )
         return list(result.scalars())
+
+
+class SopRepository:
+    """SOP reads put tenant, status and effective-date predicates in SQL."""
+
+    async def list_effective_chunks(
+        self,
+        session: AsyncSession,
+        *,
+        tenant_id: str,
+        as_of: datetime,
+        customer_account_code: str | None,
+        location_code: str | None,
+        service_level: str | None,
+        rule_types: list[str],
+    ) -> list[tuple[SopChunk, SopDocument]]:
+        predicates = [
+            SopChunk.tenant_id == tenant_id,
+            SopDocument.tenant_id == tenant_id,
+            SopDocument.status == "approved",
+            SopDocument.effective_from <= as_of,
+            or_(SopDocument.effective_to.is_(None), SopDocument.effective_to >= as_of),
+            _metadata_scope(SopChunk.customer_account_code, customer_account_code),
+            _metadata_scope(SopChunk.location_code, location_code),
+            _metadata_scope(SopChunk.service_level, service_level),
+        ]
+        if rule_types:
+            predicates.append(SopChunk.rule_type.in_(rule_types))
+        result = await session.execute(
+            select(SopChunk, SopDocument)
+            .join(
+                SopDocument,
+                and_(
+                    SopDocument.id == SopChunk.sop_document_id,
+                    SopDocument.tenant_id == SopChunk.tenant_id,
+                ),
+            )
+            .where(*predicates)
+            .order_by(SopDocument.version.asc(), SopChunk.ordinal.asc(), SopChunk.id.asc())
+        )
+        return list(result.all())
+
+    async def save_retrieval_run(
+        self,
+        session: AsyncSession,
+        *,
+        run: RetrievalRun,
+        hits: list[RetrievalHit],
+    ) -> None:
+        session.add(run)
+        session.add_all(hits)
+        await session.commit()
+
+    async def get_retrieval_run(
+        self, session: AsyncSession, *, tenant_id: str, retrieval_run_id: str
+    ) -> RetrievalRun | None:
+        result = await session.execute(
+            select(RetrievalRun).where(
+                RetrievalRun.tenant_id == tenant_id,
+                RetrievalRun.id == retrieval_run_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+
+def _metadata_scope(column, value: str | None):
+    if value is None:
+        return column.is_(None)
+    return or_(column.is_(None), column == value)

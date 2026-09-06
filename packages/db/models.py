@@ -4,6 +4,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -63,6 +64,121 @@ class Membership(Base):
         UniqueConstraint("tenant_id", "user_id", name="uq_memberships_tenant_user"),
         CheckConstraint("role in ('viewer', 'reviewer', 'admin')", name="ck_memberships_role"),
         CheckConstraint("status in ('active', 'suspended')", name="ck_memberships_status"),
+    )
+
+
+class SopDocument(Base):
+    __tablename__ = "sop_documents"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    source_name: Mapped[str] = mapped_column(String(240), nullable=False)
+    version: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
+    effective_from: Mapped[datetime] = mapped_column(nullable=False)
+    effective_to: Mapped[datetime | None] = mapped_column(nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("id", "tenant_id", name="uq_sop_documents_id_tenant"),
+        UniqueConstraint("tenant_id", "title", "version", name="uq_sop_documents_tenant_version"),
+        CheckConstraint(
+            "status in ('draft', 'approved', 'retired')", name="ck_sop_documents_status"
+        ),
+        Index("ix_sop_documents_tenant_effective", "tenant_id", "status", "effective_from"),
+    )
+
+
+class SopChunk(Base):
+    __tablename__ = "sop_chunks"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    sop_document_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    text_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    rule_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    customer_account_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    location_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    service_level: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tags_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    embedding_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["sop_document_id", "tenant_id"],
+            ["sop_documents.id", "sop_documents.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_sop_chunks_document_tenant",
+        ),
+        UniqueConstraint("tenant_id", "sop_document_id", "ordinal", name="uq_sop_chunks_ordinal"),
+        Index(
+            "ix_sop_chunks_tenant_metadata",
+            "tenant_id",
+            "customer_account_code",
+            "location_code",
+            "service_level",
+            "rule_type",
+        ),
+    )
+
+
+class RetrievalRun(Base):
+    __tablename__ = "retrieval_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(
+        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    query_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    filter_json: Mapped[str] = mapped_column(Text, nullable=False)
+    algorithm_version: Mapped[str] = mapped_column(String(120), nullable=False)
+    top_k: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        Index("ix_retrieval_runs_tenant_created", "tenant_id", "created_at"),
+        Index("ix_retrieval_runs_tenant_query", "tenant_id", "query_sha256"),
+    )
+
+
+class RetrievalHit(Base):
+    __tablename__ = "retrieval_hits"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    retrieval_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    sop_chunk_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    score: Mapped[float] = mapped_column(nullable=False)
+    lexical_score: Mapped[float] = mapped_column(nullable=False)
+    semantic_score: Mapped[float] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["retrieval_run_id", "tenant_id"],
+            ["retrieval_runs.id", "retrieval_runs.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_retrieval_hits_run_tenant",
+        ),
+        ForeignKeyConstraint(
+            ["sop_chunk_id", "tenant_id"],
+            ["sop_chunks.id", "sop_chunks.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_retrieval_hits_chunk_tenant",
+        ),
+        UniqueConstraint("tenant_id", "retrieval_run_id", "sop_chunk_id", name="uq_retrieval_hit"),
+        Index("ix_retrieval_hits_tenant_run", "tenant_id", "retrieval_run_id", "rank"),
     )
 
 

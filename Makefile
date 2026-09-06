@@ -36,6 +36,9 @@ test-m4:
 test-m5:
 	uv run pytest -q tests/unit/test_extraction_verification.py tests/unit/test_extraction_service.py tests/unit/test_model_providers.py
 
+test-m6:
+	uv run pytest -q tests/unit/test_sop_domain.py tests/integration/test_retrieval.py
+
 test:
 	uv run pytest -q
 

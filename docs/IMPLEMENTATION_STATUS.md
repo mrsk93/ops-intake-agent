@@ -64,6 +64,25 @@ Status: Implemented.
   Schema output, no tools and `store=False`, with explicit refusal/incomplete
   handling and version/request/usage metadata.
 
+## M6 — SOP ingestion and retrieval
+
+Status: Implemented.
+
+- Added versioned tenant-owned SOP documents and bounded hash-addressed chunks.
+- Added approved/effective-date and customer/location/service/rule metadata
+  predicates inside the retrieval SQL query.
+- Added deterministic lexical plus local hash-embedding ranking, persisted
+  retrieval runs/hits and bounded rule citations.
+- Added explicit `RULE_NOT_FOUND` abstention and tenant/future/retired rule
+  isolation tests.
+
+## M7 — Durable LangGraph workflow
+
+Status: In progress.
+
+- M6 is complete; typed graph state, node contracts and persisted review
+  interrupts are being added next.
+
 ## Checks
 
 - `uv lock --check`: passed; 87 Python packages resolved, including `pypdf==6.17.0` and `python-multipart==0.0.32`.
@@ -75,6 +94,7 @@ Status: Implemented.
 - `make test-m3`: passed; deterministic CSV/XLSX/email/OCR parser and evidence-map tests.
 - `make test-m4`: passed; 7 canonical-domain and validation tests.
 - `make test-m5`: passed; 11 extraction verification, fake-provider and optional-adapter tests.
+- `make test-m6`: pending until M7 closes the current implementation batch.
 - `make test`: passed; 43 tests, with the same 2 upstream Starlette/httpx deprecation warnings.
 - `alembic upgrade head` against temporary SQLite: passed; `0002_artifact_ingestion` is head.
 - Synthetic seed against temporary SQLite: passed.
@@ -83,6 +103,6 @@ Status: Implemented.
 
 ## Handoff boundary
 
-M0 through M5 are complete. SOP retrieval, review UI, durable workflow
-interrupts and operational execution remain deferred to M6-M9. Evaluation,
-security/operations hardening and portfolio release remain deferred to M10-M12.
+M0 through M6 are complete. M7 durable workflow work is in progress. Review UI,
+approval/execution, evaluation, security/operations hardening and portfolio
+release remain deferred to M8-M12.
