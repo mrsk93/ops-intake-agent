@@ -1,0 +1,17 @@
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+.env
+.next/
+*.tsbuildinfo
+node_modules/
+dist/
+*.pyc
+*.egg-info/
+coverage.xml
+.coverage
+htmlcov/
+postgres-data/
+minio-data/
+redis-data/

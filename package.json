@@ -1,0 +1,11 @@
+{
+  "name": "ops-intake-agent-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --filter ops-intake-web dev",
+    "build": "pnpm --filter ops-intake-web build",
+    "lint": "pnpm --filter ops-intake-web lint",
+    "typecheck": "pnpm --filter ops-intake-web typecheck"
+  }
+}

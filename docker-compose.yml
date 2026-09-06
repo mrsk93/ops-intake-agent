@@ -1,0 +1,106 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ops_intake
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d ops_intake"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - minio-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/ops_intake
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_ACCESS_KEY: minioadmin
+      OBJECT_STORAGE_SECRET_KEY: minioadmin
+      OBJECT_STORAGE_BUCKET: ops-intake-demo
+      AUTH_JWT_SECRET: local-only-demo-secret-change-me
+      ENABLE_DEMO_CONTROLS: "true"
+      MODEL_PROVIDER: fake
+      OCR_PROVIDER: fake
+      OPS_PROVIDER: mock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: ["sh", "-c", "uv run --no-sync alembic upgrade head && uv run --no-sync python -m scripts.seed_demo && uv run --no-sync uvicorn apps.api.app.main:app --host 0.0.0.0 --port 8000"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/ops_intake
+      REDIS_URL: redis://redis:6379/0
+      AUTH_JWT_SECRET: local-only-demo-secret-change-me
+      ENABLE_DEMO_CONTROLS: "true"
+      MODEL_PROVIDER: fake
+      OCR_PROVIDER: fake
+      OPS_PROVIDER: mock
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: ["uv", "run", "--no-sync", "dramatiq", "apps.worker.worker.main"]
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-data:
+  minio-data:
