@@ -39,9 +39,7 @@ def test_unknown_sku_negative_quantity_and_bad_reference_block_preview() -> None
     request = valid_request().model_copy(
         update={
             "external_request_reference": "BAD-100",
-            "line_items": [
-                FulfillmentLine(sku="SKU-NOT-REAL", quantity=1, unit="EA")
-            ],
+            "line_items": [FulfillmentLine(sku="SKU-NOT-REAL", quantity=1, unit="EA")],
         }
     )
     report = validate_request(

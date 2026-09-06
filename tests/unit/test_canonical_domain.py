@@ -68,9 +68,7 @@ def test_action_preview_hash_is_immutable_and_deterministic() -> None:
             report=report.model_copy(
                 update={
                     "issues": [
-                        ValidationIssue(
-                            code="BLOCKED", severity="blocking", safe_message="blocked"
-                        )
+                        ValidationIssue(code="BLOCKED", severity="blocking", safe_message="blocked")
                     ],
                     "review_route": "blocked",
                 }

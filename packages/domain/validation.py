@@ -34,9 +34,7 @@ def normalize_request(request: DraftFulfillmentRequest) -> DraftFulfillmentReque
                 }
             ),
             "line_items": [
-                line.model_copy(
-                    update={"sku": _upper(line.sku), "unit": _upper(line.unit)}
-                )
+                line.model_copy(update={"sku": _upper(line.sku), "unit": _upper(line.unit)})
                 for line in request.line_items
             ],
         }
@@ -60,8 +58,10 @@ def validate_request(
     _flag_untrusted_instructions(normalized, issues)
 
     has_warning = any(issue.severity == "warning" for issue in issues)
-    route = "blocked" if any(issue.severity == "blocking" for issue in issues) else (
-        "needs_review" if has_warning or issues else "high_review_confidence"
+    route = (
+        "blocked"
+        if any(issue.severity == "blocking" for issue in issues)
+        else ("needs_review" if has_warning or issues else "high_review_confidence")
     )
     return ValidationReport(
         policy_version=policy_version,
