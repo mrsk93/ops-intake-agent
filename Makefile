@@ -34,7 +34,7 @@ test-m4:
 	uv run pytest -q tests/unit/test_canonical_domain.py tests/unit/test_validation.py
 
 test-m5:
-	uv run pytest -q tests/unit/test_extraction_verification.py tests/unit/test_model_providers.py
+	uv run pytest -q tests/unit/test_extraction_verification.py tests/unit/test_extraction_service.py tests/unit/test_model_providers.py
 
 test:
 	uv run pytest -q

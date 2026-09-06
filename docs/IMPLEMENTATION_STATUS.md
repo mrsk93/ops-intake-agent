@@ -73,8 +73,8 @@ Status: Implemented.
 - `make test-m1`: passed; 11 tests, with 2 upstream Starlette/httpx deprecation warnings.
 - `make test-m2`: passed; artifact safety, lifecycle, deduplication, retention and tenant-isolation tests.
 - `make test-m3`: passed; deterministic CSV/XLSX/email/OCR parser and evidence-map tests.
-- `make test-m4`: pending final M4/M5 verification.
-- `make test-m5`: pending final M4/M5 verification.
+- `make test-m4`: passed; 7 canonical-domain and validation tests.
+- `make test-m5`: passed; 11 extraction verification, fake-provider and optional-adapter tests.
 - `make test`: passed; 25 tests, with the same 2 upstream Starlette/httpx deprecation warnings.
 - `alembic upgrade head` against temporary SQLite: passed; `0002_artifact_ingestion` is head.
 - Synthetic seed against temporary SQLite: passed.
