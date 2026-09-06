@@ -40,6 +40,21 @@ Status: Implemented.
 - Added versioned parsed artifact models with page, sheet, row, column and character coordinates plus exact text hashes and warnings.
 - Added exact normalized header mapping; fuzzy or model-based header guesses are not used.
 
+## M4 — Canonical domain, schemas and validation
+
+Status: Implemented.
+
+- Added strict canonical fulfillment, evidence, validation-report and immutable
+  action-preview models with deterministic hashes and stable idempotency keys.
+- Added tenant-specific synthetic master data and deterministic required-field,
+  cross-field, postal, SKU/unit, service-level and untrusted-instruction gates.
+- Added quality/review routing without treating quality scores as calibrated
+  probabilities; blocking issues cannot produce an action preview.
+
+## M5 — Model providers and extraction
+
+Status: In progress.
+
 ## Checks
 
 - `uv lock --check`: passed; 87 Python packages resolved, including `pypdf==6.17.0` and `python-multipart==0.0.32`.
