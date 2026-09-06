@@ -53,7 +53,16 @@ Status: Implemented.
 
 ## M5 — Model providers and extraction
 
-Status: In progress.
+Status: Implemented.
+
+- Added provider-neutral classification/extraction ports, strict model output
+  schemas, evidence coordinate/excerpt verification and unsupported-path
+  rejection.
+- Added a hash-addressed deterministic fake with schema-repair, timeout and
+  refusal scenarios; CI remains API-key free.
+- Added an optional OpenAI Responses adapter using strict `text.format` JSON
+  Schema output, no tools and `store=False`, with explicit refusal/incomplete
+  handling and version/request/usage metadata.
 
 ## Checks
 
@@ -64,6 +73,8 @@ Status: In progress.
 - `make test-m1`: passed; 11 tests, with 2 upstream Starlette/httpx deprecation warnings.
 - `make test-m2`: passed; artifact safety, lifecycle, deduplication, retention and tenant-isolation tests.
 - `make test-m3`: passed; deterministic CSV/XLSX/email/OCR parser and evidence-map tests.
+- `make test-m4`: pending final M4/M5 verification.
+- `make test-m5`: pending final M4/M5 verification.
 - `make test`: passed; 25 tests, with the same 2 upstream Starlette/httpx deprecation warnings.
 - `alembic upgrade head` against temporary SQLite: passed; `0002_artifact_ingestion` is head.
 - Synthetic seed against temporary SQLite: passed.

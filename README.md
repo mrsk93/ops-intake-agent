@@ -2,7 +2,7 @@
 
 Ops Intake Agent is a production-shaped portfolio demonstration of governed document intake. AI is limited to classification and structured extraction; deterministic policy, evidence and a human control any future operational write.
 
-## M0–M3 local quickstart
+## M0–M5 local quickstart
 
 Requirements: Python 3.12, uv 0.12.2, Node 22, pnpm 10.33.0, and Docker Compose for the full stack.
 
@@ -22,7 +22,12 @@ Synthetic demo users use the email addresses in `scripts/seed_demo.py` and the l
 
 ## Trust and tenancy rules
 
-Uploaded documents, OCR output and model output are untrusted data. No model provider receives operational credentials or a direct operations tool. Tenant identity is resolved from a signed token plus a tenant membership query, and tenant IDs are required in tenant-facing SQL predicates. M0–M3 has no operational write endpoint.
+Uploaded documents, OCR output and model output are untrusted data. No model provider receives operational credentials or a direct operations tool. Tenant identity is resolved from a signed token plus a tenant membership query, and tenant IDs are required in tenant-facing SQL predicates. M0–M5 has no operational write endpoint.
+
+M4 adds the canonical request schema and deterministic policy gate. M5 adds a
+hash-addressed fake extraction provider for CI plus an optional OpenAI Responses
+adapter. The live adapter is not enabled by default and does not receive
+operational tools or credentials.
 
 ## Commands
 

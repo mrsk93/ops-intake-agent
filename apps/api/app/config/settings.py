@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     ops_provider: Literal["mock", "external"] = "mock"
     openai_api_key: str | None = None
     openai_model: str | None = None
+    model_timeout_seconds: float = Field(default=45.0, ge=1, le=300)
+    max_model_output_tokens: int = Field(default=1200, ge=100, le=10_000)
+    extraction_prompt_version: str = "prompt-1.0"
+    extraction_schema_version: str = "1.0"
 
     @model_validator(mode="after")
     def validate_production_safety(self) -> "Settings":
