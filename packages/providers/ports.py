@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import AsyncIterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -34,6 +34,15 @@ class OcrProvider(Protocol):
 
 
 class StoragePort(Protocol):
+    async def put_stream(
+        self,
+        *,
+        tenant_id: str,
+        key: str,
+        chunks: AsyncIterable[bytes],
+        content_type: str,
+    ) -> str: ...
+
     async def put(self, *, tenant_id: str, key: str, content: bytes, content_type: str) -> str: ...
 
     async def get(self, *, tenant_id: str, key: str) -> bytes: ...

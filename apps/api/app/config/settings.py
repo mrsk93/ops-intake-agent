@@ -15,6 +15,16 @@ class Settings(BaseSettings):
     object_storage_access_key: str = "minioadmin"
     object_storage_secret_key: str = "minioadmin"
     object_storage_bucket: str = "ops-intake-demo"
+    artifact_storage_provider: Literal["local", "s3", "fake"] = "local"
+    artifact_storage_root: str = ".data/objects"
+    max_artifacts_per_intake: int = Field(default=10, ge=1, le=100)
+    max_artifact_bytes: int = Field(default=15 * 1024 * 1024, ge=1, le=100 * 1024 * 1024)
+    max_total_intake_bytes: int = Field(default=40 * 1024 * 1024, ge=1, le=200 * 1024 * 1024)
+    max_pdf_pages: int = Field(default=100, ge=1, le=1000)
+    max_workbook_sheets: int = Field(default=10, ge=1, le=100)
+    max_table_rows: int = Field(default=10_000, ge=1, le=1_000_000)
+    max_extracted_text_chars: int = Field(default=1_000_000, ge=1_000, le=10_000_000)
+    artifact_retention_days: int = Field(default=30, ge=1, le=3650)
     auth_jwt_secret: str = "local-only-demo-secret-change-me"
     auth_token_ttl_minutes: int = Field(default=30, ge=5, le=1440)
     enable_demo_controls: bool = True
@@ -37,6 +47,8 @@ class Settings(BaseSettings):
                 raise ValueError("fake/demo providers are forbidden in production")
             if self.auth_jwt_secret == "local-only-demo-secret-change-me":
                 raise ValueError("AUTH_JWT_SECRET must be explicitly configured in production")
+            if self.artifact_storage_provider in {"local", "fake"}:
+                raise ValueError("ARTIFACT_STORAGE_PROVIDER must be s3 in production")
         return self
 
 
