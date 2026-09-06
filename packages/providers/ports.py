@@ -10,6 +10,15 @@ class ProviderMetadata:
     request_id: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ModelConfig:
+    model: str
+    timeout_seconds: float = 45.0
+    max_output_tokens: int = 1200
+    max_retries: int = 1
+    store: bool = False
+
+
 class ClassificationProvider(Protocol):
     async def classify(
         self, *, tenant_id: str, evidence: Sequence[Mapping[str, Any]]
@@ -24,6 +33,10 @@ class ExtractionProvider(Protocol):
         evidence: Sequence[Mapping[str, Any]],
         schema_version: str,
         prompt_version: str,
+        output_schema: Mapping[str, Any] | None = None,
+        model_config: ModelConfig | None = None,
+        request_id: str | None = None,
+        repair_hint: str | None = None,
     ) -> Mapping[str, Any]: ...
 
 

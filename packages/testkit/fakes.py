@@ -1,7 +1,10 @@
+import hashlib
+import json
 from collections.abc import AsyncIterable, Mapping, Sequence
 from typing import Any
 
 from packages.domain.artifacts import content_sha256
+from packages.providers.ports import ModelConfig
 
 
 class FakeClassificationProvider:
@@ -12,6 +15,20 @@ class FakeClassificationProvider:
 
 
 class FakeExtractionProvider:
+    def __init__(
+        self,
+        output: Mapping[str, Any] | None = None,
+        *,
+        fixtures: Mapping[str, Mapping[str, Any]] | None = None,
+        failure: str | None = None,
+    ) -> None:
+        self.output = (
+            dict(output) if output is not None else {"schema_version": "1.0", "fields": []}
+        )
+        self.fixtures = {key: dict(value) for key, value in (fixtures or {}).items()}
+        self.failure = failure
+        self.calls: list[str | None] = []
+
     async def extract(
         self,
         *,
@@ -19,13 +36,28 @@ class FakeExtractionProvider:
         evidence: Sequence[Mapping[str, Any]],
         schema_version: str,
         prompt_version: str,
+        output_schema: Mapping[str, Any] | None = None,
+        model_config: ModelConfig | None = None,
+        request_id: str | None = None,
+        repair_hint: str | None = None,
     ) -> Mapping[str, Any]:
-        return {
-            "schema_version": schema_version,
-            "tenant_id": tenant_id,
-            "prompt_version": prompt_version,
-            "fields": [],
-        }
+        del tenant_id, output_schema, model_config, prompt_version
+        self.calls.append(repair_hint)
+        if self.failure == "timeout":
+            from packages.providers.model import ModelProviderError
+
+            raise ModelProviderError("PROVIDER_TIMEOUT", "synthetic timeout", retryable=True)
+        if self.failure == "refusal":
+            from packages.providers.model import ModelProviderRefusal
+
+            raise ModelProviderRefusal()
+        fixture_key = hashlib.sha256(
+            json.dumps(list(evidence), sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        result = dict(self.fixtures.get(fixture_key, self.output))
+        result.setdefault("schema_version", schema_version)
+        del request_id
+        return result
 
 
 class FakeOcrProvider:
