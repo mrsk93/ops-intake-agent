@@ -2,11 +2,13 @@ import argparse
 import asyncio
 from urllib.parse import urlparse
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from apps.api.app.config.settings import get_settings
 from apps.api.app.db.session import create_session_factory
-from packages.db.models import Membership, Tenant, User
+from packages.db.models import Artifact, Membership, Tenant, User
+from packages.db.repositories import ArtifactRepository
+from packages.providers.storage import LocalFileStorage, S3Storage
 
 
 def validate_reset_target(*, database_url: str, bucket: str, app_env: str, confirmed: bool) -> None:
@@ -33,14 +35,32 @@ async def reset() -> None:
         confirmed=args.confirm_reset,
     )
     factory, engine = create_session_factory(settings)
+    storage = _storage_for_settings(settings)
     async with factory() as session:
+        tenants = list((await session.scalars(select(Tenant))).all())
+        artifact_repository = ArtifactRepository()
+        for tenant in tenants:
+            for artifact in await artifact_repository.list_for_tenant(session, tenant_id=tenant.id):
+                if artifact.storage_key:
+                    await storage.delete(tenant_id=tenant.id, key=artifact.storage_key)
+        await session.execute(delete(Artifact))
         await session.execute(delete(Membership))
         await session.execute(delete(User))
         await session.execute(delete(Tenant))
         await session.commit()
     await engine.dispose()
-    print("Reset synthetic identity data only; storage object deletion is deferred")
-    print("until artifact ingestion exists.")
+    print("Reset synthetic identity data and tenant-scoped demo artifacts.")
+
+
+def _storage_for_settings(settings):
+    if settings.artifact_storage_provider == "s3":
+        return S3Storage(
+            endpoint=settings.object_storage_endpoint,
+            access_key=settings.object_storage_access_key,
+            secret_key=settings.object_storage_secret_key,
+            bucket=settings.object_storage_bucket,
+        )
+    return LocalFileStorage(settings.artifact_storage_root)
 
 
 if __name__ == "__main__":
