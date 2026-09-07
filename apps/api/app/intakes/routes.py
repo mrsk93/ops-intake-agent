@@ -20,10 +20,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.app.auth.dependencies import get_current_context, get_db_session, require_roles
 from apps.api.app.intakes.schemas import (
+    ApproveRequest,
     EditFieldsRequest,
     IntakeCreate,
     IntakeView,
     PreviewRequest,
+    RecoverRequest,
     RevalidateRequest,
     WarningAcknowledgementRequest,
 )
@@ -31,6 +33,7 @@ from packages.db.models import IntakeRun
 from packages.db.repositories import ArtifactRepository, IntakeRunRepository
 from packages.domain.identity import Role, TenantContext
 from packages.domain.review import ReviewFixture
+from packages.operations.service import OperationsError, OperationsService
 from packages.review.service import ReviewError, ReviewService
 
 router = APIRouter(prefix="/api/intakes", tags=["intakes"])
@@ -246,6 +249,88 @@ async def create_action_preview(
     )
 
 
+@router.post("/{intake_id}/approve")
+async def approve_action(
+    intake_id: str,
+    payload: ApproveRequest,
+    request: Request,
+    context: TenantContext = reviewer,
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    await _get_intake(session, context, intake_id)
+    try:
+        return await OperationsService(request.app.state.operations_provider).approve_and_execute(
+            session,
+            tenant_id=context.tenant_id,
+            intake_run_id=intake_id,
+            actor_user_id=context.user_id,
+            expected_review_version=payload.expected_review_version,
+            proposed_action_id=payload.proposed_action_id,
+            preview_payload_sha256=payload.preview_payload_sha256,
+        )
+    except OperationsError as exc:
+        raise _operations_http_error(exc) from exc
+
+
+@router.get("/{intake_id}/execution")
+async def get_execution(
+    intake_id: str,
+    request: Request,
+    context: TenantContext = Depends(get_current_context),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    await _get_intake(session, context, intake_id)
+    try:
+        return await OperationsService(request.app.state.operations_provider).execution_status(
+            session, tenant_id=context.tenant_id, intake_run_id=intake_id
+        )
+    except OperationsError as exc:
+        raise _operations_http_error(exc) from exc
+
+
+@router.post("/{intake_id}/execution/recover")
+async def recover_execution(
+    intake_id: str,
+    payload: RecoverRequest,
+    request: Request,
+    context: TenantContext = reviewer,
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    await _get_intake(session, context, intake_id)
+    try:
+        return await OperationsService(request.app.state.operations_provider).recover(
+            session,
+            tenant_id=context.tenant_id,
+            intake_run_id=intake_id,
+            actor_user_id=context.user_id,
+            reason=payload.reason,
+        )
+    except OperationsError as exc:
+        raise _operations_http_error(exc) from exc
+
+
+@router.get("/{intake_id}/audit")
+async def get_audit(
+    intake_id: str,
+    request: Request,
+    context: TenantContext = reviewer,
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    await _get_intake(session, context, intake_id)
+    try:
+        execution = await OperationsService(request.app.state.operations_provider).execution_status(
+            session, tenant_id=context.tenant_id, intake_run_id=intake_id
+        )
+    except OperationsError as exc:
+        if exc.code != "ACTION_NOT_FOUND":
+            raise _operations_http_error(exc) from exc
+        execution = {"audit": []}
+    review = await ReviewService().get_review(
+        session, tenant_id=context.tenant_id, intake_run_id=intake_id
+    )
+    return {"events": [*review["audit"], *execution["audit"]]}
+
+
 async def _get_intake(session: AsyncSession, context: TenantContext, intake_id: str) -> IntakeRun:
     intake = await IntakeRunRepository().get(
         session, tenant_id=context.tenant_id, intake_run_id=intake_id
@@ -268,3 +353,22 @@ async def _handle_review_error(call):
             else status.HTTP_422_UNPROCESSABLE_CONTENT
         )
         raise HTTPException(status_code=code_status, detail=detail) from exc
+
+
+def _operations_http_error(exc: OperationsError) -> HTTPException:
+    code_status = (
+        status.HTTP_409_CONFLICT
+        if exc.code
+        in {
+            "STALE_REVIEW_VERSION",
+            "STALE_ACTION",
+            "PREVIEW_HASH_MISMATCH",
+            "VALIDATION_STALE",
+            "ALREADY_EXECUTED",
+            "RECEIPT_MISMATCH",
+            "EXECUTION_UNCERTAIN",
+            "RECOVERY_NOT_ALLOWED",
+        }
+        else status.HTTP_422_UNPROCESSABLE_CONTENT
+    )
+    return HTTPException(status_code=code_status, detail={"code": exc.code, "message": exc.message})

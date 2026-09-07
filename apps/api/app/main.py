@@ -15,9 +15,9 @@ from apps.api.app.intakes.routes import router as intakes_router
 from packages.artifacts.service import ArtifactIngestionService
 from packages.domain.artifacts import ArtifactLimits
 from packages.domain.identity import Role, TenantContext
-from packages.providers.ports import OcrProvider, StoragePort
+from packages.providers.ports import OcrProvider, OperationsPort, StoragePort
 from packages.providers.storage import LocalFileStorage, S3Storage
-from packages.testkit.fakes import FakeOcrProvider, FakeStorage
+from packages.testkit.fakes import FakeOcrProvider, FakeStorage, MockOperations
 
 
 def create_app(
@@ -26,6 +26,7 @@ def create_app(
     session_factory: Any | None = None,
     storage_provider: StoragePort | None = None,
     ocr_provider: OcrProvider | None = None,
+    operations_provider: OperationsPort | None = None,
 ) -> FastAPI:
     resolved_settings = settings or get_settings()
     resolved_session_factory, engine = (
@@ -36,6 +37,7 @@ def create_app(
     redis_client = Redis.from_url(resolved_settings.redis_url, decode_responses=True)
     resolved_storage = storage_provider or _storage_for_settings(resolved_settings)
     resolved_ocr = ocr_provider or _ocr_for_settings(resolved_settings)
+    resolved_operations = operations_provider or _operations_for_settings(resolved_settings)
     artifact_limits = ArtifactLimits(
         max_artifacts_per_intake=resolved_settings.max_artifacts_per_intake,
         max_artifact_bytes=resolved_settings.max_artifact_bytes,
@@ -59,6 +61,7 @@ def create_app(
     app.state.redis_client = redis_client
     app.state.storage_provider = resolved_storage
     app.state.ocr_provider = resolved_ocr
+    app.state.operations_provider = resolved_operations
     app.state.artifact_limits = artifact_limits
     app.state.artifact_service = ArtifactIngestionService(
         resolved_storage,
@@ -155,6 +158,24 @@ class _UnavailableOcrProvider:
 
 def _ocr_for_settings(settings: Settings) -> OcrProvider:
     return FakeOcrProvider() if settings.ocr_provider == "fake" else _UnavailableOcrProvider()
+
+
+class _UnavailableOperations:
+    async def create_draft(self, **kwargs):
+        del kwargs
+        raise RuntimeError("operations provider is not configured")
+
+    async def lookup(self, **kwargs):
+        del kwargs
+        raise RuntimeError("operations provider is not configured")
+
+    async def read_back(self, **kwargs):
+        del kwargs
+        raise RuntimeError("operations provider is not configured")
+
+
+def _operations_for_settings(settings: Settings) -> OperationsPort:
+    return MockOperations() if settings.ops_provider == "mock" else _UnavailableOperations()
 
 
 app = create_app()

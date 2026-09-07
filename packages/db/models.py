@@ -313,6 +313,7 @@ class ProposedAction(Base):
             ondelete="CASCADE",
             name="fk_proposed_actions_review_tenant",
         ),
+        UniqueConstraint("id", "tenant_id", name="uq_proposed_actions_id_tenant"),
         UniqueConstraint("tenant_id", "idempotency_key", name="uq_proposed_actions_idempotency"),
         CheckConstraint(
             "status in ("
@@ -321,6 +322,118 @@ class ProposedAction(Base):
             name="ck_proposed_actions_status",
         ),
         Index("ix_proposed_actions_tenant_intake", "tenant_id", "intake_run_id", "created_at"),
+    )
+
+
+class Approval(Base):
+    __tablename__ = "approvals"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    proposed_action_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    actor_user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    preview_payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["proposed_action_id", "tenant_id"],
+            ["proposed_actions.id", "proposed_actions.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_approvals_action_tenant",
+        ),
+        CheckConstraint(
+            "status in ('active', 'stale', 'consumed', 'revoked')",
+            name="ck_approvals_status",
+        ),
+        Index("ix_approvals_tenant_action", "tenant_id", "proposed_action_id"),
+    )
+
+
+class ExecutionAttempt(Base):
+    __tablename__ = "execution_attempts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    proposed_action_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    attempt_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    response_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["proposed_action_id", "tenant_id"],
+            ["proposed_actions.id", "proposed_actions.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_execution_attempts_action_tenant",
+        ),
+        CheckConstraint(
+            "status in ('executing', 'uncertain', 'verified', 'failed', 'manual_exception')",
+            name="ck_execution_attempts_status",
+        ),
+        UniqueConstraint(
+            "tenant_id", "proposed_action_id", "attempt_no", name="uq_execution_attempts_number"
+        ),
+        Index(
+            "ix_execution_attempts_tenant_action",
+            "tenant_id",
+            "proposed_action_id",
+            "attempt_no",
+        ),
+    )
+
+
+class RemoteReceipt(Base):
+    __tablename__ = "remote_receipts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    proposed_action_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    execution_attempt_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    remote_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    receipt_json: Mapped[str] = mapped_column(Text, nullable=False)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["proposed_action_id", "tenant_id"],
+            ["proposed_actions.id", "proposed_actions.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_remote_receipts_action_tenant",
+        ),
+        Index("ix_remote_receipts_tenant_action", "tenant_id", "proposed_action_id"),
+    )
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    actor_user_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    details_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.id"], ondelete="CASCADE", name="fk_audit_events_tenant"
+        ),
+        Index("ix_audit_events_tenant_created", "tenant_id", "created_at"),
+        Index("ix_audit_events_tenant_entity", "tenant_id", "entity_type", "entity_id"),
     )
 
 

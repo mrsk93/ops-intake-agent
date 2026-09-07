@@ -65,7 +65,12 @@ class StoragePort(Protocol):
 
 class OperationsPort(Protocol):
     async def create_draft(
-        self, *, tenant_id: str, idempotency_key: str, payload: Mapping[str, Any]
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        payload: Mapping[str, Any],
+        correlation_id: str | None = None,
     ) -> Mapping[str, Any]: ...
 
     async def lookup(self, *, tenant_id: str, idempotency_key: str) -> Mapping[str, Any] | None: ...

@@ -275,6 +275,11 @@ class ReviewService:
             session, tenant_id=tenant_id, intake_run_id=intake_run_id
         )
         self._check_version(review, expected_review_version)
+        current_action = await self.repository.get_action_for_draft(
+            session, tenant_id=tenant_id, draft_version_id=draft.id
+        )
+        if current_action is not None and current_action.status == "verified":
+            raise ReviewError("REVIEW_LOCKED", "verified actions cannot be edited")
         if not edits:
             raise ReviewError("NO_EDITS", "at least one field edit is required")
         payload = json.loads(draft.payload_json)
@@ -376,6 +381,11 @@ class ReviewService:
             session, tenant_id=tenant_id, intake_run_id=intake_run_id
         )
         self._check_version(review, expected_review_version)
+        current_action = await self.repository.get_action_for_draft(
+            session, tenant_id=tenant_id, draft_version_id=review.current_draft_version_id
+        )
+        if current_action is not None and current_action.status == "verified":
+            raise ReviewError("REVIEW_LOCKED", "verified actions cannot be changed")
         snapshot = await self.repository.get_snapshot(
             session, tenant_id=tenant_id, snapshot_id=review.current_validation_snapshot_id
         )
@@ -410,6 +420,11 @@ class ReviewService:
             session, tenant_id=tenant_id, intake_run_id=intake_run_id
         )
         self._check_version(review, expected_review_version)
+        current_action = await self.repository.get_action_for_draft(
+            session, tenant_id=tenant_id, draft_version_id=draft.id
+        )
+        if current_action is not None and current_action.status == "verified":
+            raise ReviewError("REVIEW_LOCKED", "verified actions cannot be revalidated")
         payload = DraftFulfillmentRequest.model_validate(json.loads(draft.payload_json))
         fields = [ReviewField.model_validate(item) for item in json.loads(draft.fields_json)]
         report = _review_report(

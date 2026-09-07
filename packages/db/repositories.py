@@ -5,11 +5,15 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.db.models import (
+    Approval,
     Artifact,
+    AuditEvent,
     DraftVersion,
+    ExecutionAttempt,
     IntakeRun,
     Membership,
     ProposedAction,
+    RemoteReceipt,
     RetrievalHit,
     RetrievalRun,
     Review,
@@ -277,6 +281,17 @@ class ReviewRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_intake(
+        self, session: AsyncSession, *, tenant_id: str, intake_run_id: str
+    ) -> IntakeRun | None:
+        result = await session.execute(
+            select(IntakeRun).where(
+                IntakeRun.tenant_id == tenant_id,
+                IntakeRun.id == intake_run_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def get_draft(
         self, session: AsyncSession, *, tenant_id: str, draft_version_id: str
     ) -> DraftVersion | None:
@@ -389,6 +404,63 @@ class ReviewRepository:
 
     async def json_payload(self, draft: DraftVersion) -> dict:
         return json.loads(draft.payload_json)
+
+
+class OperationsRepository:
+    """Approval and execution records are always loaded with tenant predicates."""
+
+    async def get_approval(
+        self, session: AsyncSession, *, tenant_id: str, approval_id: str
+    ) -> Approval | None:
+        result = await session.execute(
+            select(Approval).where(
+                Approval.tenant_id == tenant_id,
+                Approval.id == approval_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def list_attempts(
+        self, session: AsyncSession, *, tenant_id: str, action_id: str
+    ) -> list[ExecutionAttempt]:
+        result = await session.execute(
+            select(ExecutionAttempt)
+            .where(
+                ExecutionAttempt.tenant_id == tenant_id,
+                ExecutionAttempt.proposed_action_id == action_id,
+            )
+            .order_by(ExecutionAttempt.attempt_no.asc())
+        )
+        return list(result.scalars())
+
+    async def get_receipt(
+        self, session: AsyncSession, *, tenant_id: str, action_id: str
+    ) -> RemoteReceipt | None:
+        result = await session.execute(
+            select(RemoteReceipt)
+            .where(
+                RemoteReceipt.tenant_id == tenant_id,
+                RemoteReceipt.proposed_action_id == action_id,
+            )
+            .order_by(RemoteReceipt.created_at.desc())
+        )
+        return result.scalars().first()
+
+    async def list_audit(
+        self,
+        session: AsyncSession,
+        *,
+        tenant_id: str,
+        entity_id: str,
+        limit: int = 100,
+    ) -> list[AuditEvent]:
+        result = await session.execute(
+            select(AuditEvent)
+            .where(AuditEvent.tenant_id == tenant_id, AuditEvent.entity_id == entity_id)
+            .order_by(AuditEvent.created_at.asc(), AuditEvent.id.asc())
+            .limit(limit)
+        )
+        return list(result.scalars())
 
 
 def _metadata_scope(column, value: str | None):
