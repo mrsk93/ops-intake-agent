@@ -280,6 +280,50 @@ class ReviewEdit(Base):
     )
 
 
+class ProposedAction(Base):
+    __tablename__ = "proposed_actions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    intake_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    draft_version_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    validation_snapshot_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    action_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="ready")
+    approval_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+    claimed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["intake_run_id", "tenant_id"],
+            ["intake_runs.id", "intake_runs.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_proposed_actions_intake_tenant",
+        ),
+        ForeignKeyConstraint(
+            ["review_id", "tenant_id"],
+            ["reviews.id", "reviews.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_proposed_actions_review_tenant",
+        ),
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_proposed_actions_idempotency"),
+        CheckConstraint(
+            "status in ("
+            "'ready', 'claimed', 'executing', 'uncertain', 'verified', 'failed', "
+            "'cancelled', 'manual_exception')",
+            name="ck_proposed_actions_status",
+        ),
+        Index("ix_proposed_actions_tenant_intake", "tenant_id", "intake_run_id", "created_at"),
+    )
+
+
 class SopChunk(Base):
     __tablename__ = "sop_chunks"
 

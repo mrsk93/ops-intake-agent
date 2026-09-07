@@ -9,6 +9,7 @@ from packages.db.models import (
     DraftVersion,
     IntakeRun,
     Membership,
+    ProposedAction,
     RetrievalHit,
     RetrievalRun,
     Review,
@@ -294,6 +295,42 @@ class ReviewRepository:
             select(ValidationSnapshot).where(
                 ValidationSnapshot.tenant_id == tenant_id,
                 ValidationSnapshot.id == snapshot_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_action_for_draft(
+        self, session: AsyncSession, *, tenant_id: str, draft_version_id: str
+    ) -> ProposedAction | None:
+        result = await session.execute(
+            select(ProposedAction)
+            .where(
+                ProposedAction.tenant_id == tenant_id,
+                ProposedAction.draft_version_id == draft_version_id,
+                ProposedAction.status.not_in(("cancelled", "failed", "manual_exception")),
+            )
+            .order_by(ProposedAction.created_at.desc())
+        )
+        return result.scalars().first()
+
+    async def get_action(
+        self, session: AsyncSession, *, tenant_id: str, action_id: str
+    ) -> ProposedAction | None:
+        result = await session.execute(
+            select(ProposedAction).where(
+                ProposedAction.tenant_id == tenant_id,
+                ProposedAction.id == action_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_action_by_idempotency(
+        self, session: AsyncSession, *, tenant_id: str, idempotency_key: str
+    ) -> ProposedAction | None:
+        result = await session.execute(
+            select(ProposedAction).where(
+                ProposedAction.tenant_id == tenant_id,
+                ProposedAction.idempotency_key == idempotency_key,
             )
         )
         return result.scalar_one_or_none()

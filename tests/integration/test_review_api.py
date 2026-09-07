@@ -105,6 +105,35 @@ async def test_review_edit_is_evidence_bound_and_stale_version_is_rejected(
         assert edited.json()["review_version"] == 2
         assert edited.json()["draft"]["payload"]["line_items"][0]["quantity"] == 3
 
+        preview = client.post(
+            f"/api/intakes/{intake_id}/preview",
+            headers=headers,
+            json={"expected_review_version": 2},
+        )
+        assert preview.status_code == 201
+        assert preview.json()["guard_text"] == (
+            "This creates a draft only; no fulfillment is submitted."
+        )
+        assert preview.json()["payload"]["line_items"][0]["quantity"] == 3
+
+        edited_again = client.patch(
+            f"/api/intakes/{intake_id}/review/fields",
+            headers=headers,
+            json={
+                "expected_review_version": 2,
+                "edits": [
+                    {
+                        "path": "line_items[0].quantity",
+                        "value": 4,
+                        "evidence_ref_ids": [evidence_id],
+                        "reason": "Another synthetic correction",
+                    }
+                ],
+            },
+        )
+        assert edited_again.status_code == 200
+        assert edited_again.json()["preview"] is None
+
         stale = client.patch(
             f"/api/intakes/{intake_id}/review/fields",
             headers=headers,
@@ -147,7 +176,7 @@ async def test_missing_and_conflicting_fixtures_are_safe_review_states(
                 headers=headers,
                 json={"expected_review_version": 1},
             ).status_code
-            == 404
+            == 422
         )
 
         conflict = client.post(
@@ -156,7 +185,27 @@ async def test_missing_and_conflicting_fixtures_are_safe_review_states(
         conflict_id = conflict["id"]
         client.post(f"/api/intakes/{conflict_id}/submit", headers=headers)
         conflict_review = client.get(f"/api/intakes/{conflict_id}/review", headers=headers).json()
-        assert any(issue["code"] == "CONFLICTING_EVIDENCE" for issue in conflict_review["issues"])
+        warning = next(
+            issue for issue in conflict_review["issues"] if issue["code"] == "CONFLICTING_EVIDENCE"
+        )
+        acknowledged = client.post(
+            f"/api/intakes/{conflict_id}/review/acknowledge-warning",
+            headers=headers,
+            json={
+                "expected_review_version": 1,
+                "warning_code": warning["code"],
+            },
+        )
+        assert acknowledged.status_code == 200
+        assert acknowledged.json()["review_version"] == 2
+        assert (
+            client.post(
+                f"/api/intakes/{conflict_id}/preview",
+                headers=headers,
+                json={"expected_review_version": 2},
+            ).status_code
+            == 201
+        )
         assert "<script>" not in json.dumps(conflict_review)
 
 

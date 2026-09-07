@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.db.models import (
     DraftVersion,
     IntakeRun,
+    ProposedAction,
     Review,
     ReviewEdit,
     ValidationIssueRecord,
@@ -21,6 +22,7 @@ from packages.domain.canonical import (
     DraftFulfillmentRequest,
     ValidationIssue,
     ValidationReport,
+    build_action_preview,
     payload_sha256,
 )
 from packages.domain.extraction import is_supported_field_path
@@ -152,6 +154,9 @@ class ReviewService:
             session, tenant_id=tenant_id, snapshot_id=snapshot.id
         )
         edits = await self.repository.list_edits(session, tenant_id=tenant_id, review_id=review.id)
+        action = await self.repository.get_action_for_draft(
+            session, tenant_id=tenant_id, draft_version_id=draft.id
+        )
         fields = [ReviewField.model_validate(item) for item in json.loads(draft.fields_json)]
         return {
             "intake_run_id": intake_run_id,
@@ -166,7 +171,11 @@ class ReviewService:
             "issues": [_issue_view(issue) for issue in issues],
             "rules": [item.model_dump(mode="json") for item in DEMO_RULES],
             "acknowledged_warnings": json.loads(review.acknowledged_warnings_json),
-            "preview": None,
+            "preview": (
+                _action_view(action)
+                if action is not None and action.review_version == review.current_version
+                else None
+            ),
             "audit": [
                 {
                     "kind": "field_edit",
@@ -178,6 +187,79 @@ class ReviewService:
                 for item in edits
             ],
         }
+
+    async def build_preview(
+        self,
+        session: AsyncSession,
+        *,
+        tenant_id: str,
+        intake_run_id: str,
+        expected_review_version: int,
+    ) -> dict[str, Any]:
+        review, draft, _ = await self._current_records(
+            session, tenant_id=tenant_id, intake_run_id=intake_run_id
+        )
+        self._check_version(review, expected_review_version)
+        snapshot = await self.repository.get_snapshot(
+            session, tenant_id=tenant_id, snapshot_id=review.current_validation_snapshot_id
+        )
+        if snapshot is None or snapshot.draft_version_id != draft.id:
+            raise ReviewError("VALIDATION_STALE", "revalidate before creating a preview")
+        issues = await self.repository.list_issues(
+            session, tenant_id=tenant_id, snapshot_id=snapshot.id
+        )
+        if any(item.severity == "blocking" and not item.resolved for item in issues):
+            raise ReviewError(
+                "BLOCKING_ISSUES", "blocking validation issues prevent an action preview"
+            )
+        acknowledged = set(json.loads(review.acknowledged_warnings_json))
+        if any(item.severity == "warning" and item.code not in acknowledged for item in issues):
+            raise ReviewError(
+                "WARNINGS_NOT_ACKNOWLEDGED",
+                "acknowledge all warnings before creating an action preview",
+            )
+        payload = DraftFulfillmentRequest.model_validate(json.loads(draft.payload_json))
+        report = ValidationReport.model_validate(json.loads(snapshot.report_json))
+        action = build_action_preview(
+            payload=payload,
+            report=report,
+            intake_run_id=intake_run_id,
+            validation_snapshot_id=snapshot.id,
+            now=datetime.now(UTC),
+        )
+        existing = await self.repository.get_action_by_idempotency(
+            session, tenant_id=tenant_id, idempotency_key=action.idempotency_key
+        )
+        if existing is not None:
+            if existing.payload_sha256 != action.payload_sha256:
+                raise ReviewError(
+                    "IDEMPOTENCY_CONFLICT", "idempotency key maps to a different payload"
+                )
+            if (
+                existing.draft_version_id == draft.id
+                and existing.review_version == review.current_version
+            ):
+                return _action_view(existing)
+            raise ReviewError("STALE_ACTION", "this preview is stale; refresh the review")
+        record = ProposedAction(
+            id=f"action-{uuid4().hex}",
+            tenant_id=tenant_id,
+            intake_run_id=intake_run_id,
+            review_id=review.id,
+            draft_version_id=draft.id,
+            validation_snapshot_id=snapshot.id,
+            action_type=action.action_type,
+            action_version=action.action_version,
+            payload_json=action.payload.model_dump_json(),
+            payload_sha256=action.payload_sha256,
+            idempotency_key=action.idempotency_key,
+            review_version=review.current_version,
+            status="ready",
+            created_at=datetime.now(UTC),
+        )
+        session.add(record)
+        await session.commit()
+        return _action_view(record)
 
     async def edit_fields(
         self,
@@ -592,6 +674,24 @@ def _issue_view(issue: ValidationIssueRecord) -> dict[str, Any]:
         "rule_refs": json.loads(issue.rule_refs_json),
         "acknowledged": issue.acknowledged,
         "resolved": issue.resolved,
+    }
+
+
+def _action_view(action: ProposedAction) -> dict[str, Any]:
+    return {
+        "id": action.id,
+        "action_type": action.action_type,
+        "action_version": action.action_version,
+        "payload": json.loads(action.payload_json),
+        "payload_sha256": action.payload_sha256,
+        "payload_sha256_short": action.payload_sha256[:12],
+        "idempotency_key_short": action.idempotency_key[:12],
+        "validation_snapshot_id": action.validation_snapshot_id,
+        "draft_version_id": action.draft_version_id,
+        "review_version": action.review_version,
+        "status": action.status,
+        "created_at": action.created_at.isoformat(),
+        "guard_text": "This creates a draft only; no fulfillment is submitted.",
     }
 
 

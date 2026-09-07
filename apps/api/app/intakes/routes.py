@@ -23,6 +23,7 @@ from apps.api.app.intakes.schemas import (
     EditFieldsRequest,
     IntakeCreate,
     IntakeView,
+    PreviewRequest,
     RevalidateRequest,
     WarningAcknowledgementRequest,
 )
@@ -140,9 +141,7 @@ async def submit_intake(
         session, tenant_id=context.tenant_id, limit=100
     )
     accepted = [
-        item.id
-        for item in artifacts
-        if item.intake_id == intake_id and item.status == "accepted"
+        item.id for item in artifacts if item.intake_id == intake_id and item.status == "accepted"
     ]
     if accepted:
         artifact_ids = accepted
@@ -229,6 +228,24 @@ async def revalidate_review(
     )
 
 
+@router.post("/{intake_id}/preview", status_code=status.HTTP_201_CREATED)
+async def create_action_preview(
+    intake_id: str,
+    payload: PreviewRequest,
+    context: TenantContext = reviewer,
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    await _get_intake(session, context, intake_id)
+    return await _handle_review_error(
+        lambda: ReviewService().build_preview(
+            session,
+            tenant_id=context.tenant_id,
+            intake_run_id=intake_id,
+            expected_review_version=payload.expected_review_version,
+        )
+    )
+
+
 async def _get_intake(session: AsyncSession, context: TenantContext, intake_id: str) -> IntakeRun:
     intake = await IntakeRunRepository().get(
         session, tenant_id=context.tenant_id, intake_run_id=intake_id
@@ -248,6 +265,6 @@ async def _handle_review_error(call):
         code_status = (
             status.HTTP_409_CONFLICT
             if exc.code == "STALE_REVIEW_VERSION"
-            else status.HTTP_422_UNPROCESSABLE_ENTITY
+            else status.HTTP_422_UNPROCESSABLE_CONTENT
         )
         raise HTTPException(status_code=code_status, detail=detail) from exc
