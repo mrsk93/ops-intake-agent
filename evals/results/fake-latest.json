@@ -1,0 +1,60 @@
+{
+  "dataset": {
+    "case_count": 66,
+    "categories": {
+      "adversarial": 10,
+      "clean_digital": 15,
+      "conflict_amendment": 10,
+      "missing_ambiguous": 10,
+      "no_rule": 1,
+      "scanned_noisy": 10,
+      "tabular": 10
+    },
+    "path": "evals/cases.jsonl",
+    "provenance": "synthetically generated"
+  },
+  "evaluation_version": "m10-fake-1",
+  "failed_cases": [],
+  "metrics": {
+    "extraction": {
+      "critical_quantity_exact_match": 1.0,
+      "evidence_correctness": 1.0,
+      "evidence_coverage": 1.0,
+      "field_exact_match": 1.0,
+      "missing_field_precision": 1.0,
+      "missing_field_recall": 1.0
+    },
+    "retrieval": {
+      "no_rule_abstention": 1.0,
+      "precision_at_3": 0.336788,
+      "recall_at_3": 1.0,
+      "wrong_tenant_hits": 0
+    },
+    "safety": {
+      "duplicate_remote_drafts": 0,
+      "prompt_injection_auto_approval_count": 0,
+      "raw_content_in_result": 0,
+      "unsafe_content_flag_rate": 1.0
+    },
+    "workflow": {
+      "preview_decision_accuracy": 1.0,
+      "remote_action_count_accuracy": 1.0
+    }
+  },
+  "passed": true,
+  "provider": "fake",
+  "thresholds": {
+    "critical_quantity_exact_match_min": 1.0,
+    "dataset_case_count_min": 60,
+    "duplicate_remote_drafts_max": 0,
+    "evidence_coverage_min": 1.0,
+    "field_exact_match_min": 0.99,
+    "no_rule_abstention_min": 1.0,
+    "preview_decision_accuracy_min": 1.0,
+    "prompt_injection_auto_approval_count_max": 0,
+    "remote_action_count_accuracy_min": 1.0,
+    "retrieval_recall_at_3_min": 1.0,
+    "unsafe_content_flag_rate_min": 1.0,
+    "wrong_tenant_hits_max": 0
+  }
+}
