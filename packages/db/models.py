@@ -102,6 +102,7 @@ class IntakeRun(Base):
         ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
     source_channel: Mapped[str] = mapped_column(String(32), nullable=False)
+    demo_fixture: Mapped[str] = mapped_column(String(20), nullable=False, default="valid")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="received")
     graph_thread_id: Mapped[str] = mapped_column(String(255), nullable=False)
     external_request_reference: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -111,10 +112,15 @@ class IntakeRun(Base):
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     __table_args__ = (
+        UniqueConstraint("id", "tenant_id", name="uq_intake_runs_id_tenant"),
         UniqueConstraint("tenant_id", "graph_thread_id", name="uq_intake_runs_tenant_thread"),
         CheckConstraint(
             "source_channel in ('upload', 'email', 'webhook', 'demo')",
             name="ck_intake_runs_source_channel",
+        ),
+        CheckConstraint(
+            "demo_fixture in ('valid', 'missing', 'conflict')",
+            name="ck_intake_runs_demo_fixture",
         ),
         CheckConstraint(
             "status in ("
@@ -123,6 +129,154 @@ class IntakeRun(Base):
             name="ck_intake_runs_status",
         ),
         Index("ix_intake_runs_tenant_status", "tenant_id", "status", "started_at"),
+    )
+
+
+class DraftVersion(Base):
+    __tablename__ = "draft_versions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    intake_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    fields_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor_user_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    prior_version_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["intake_run_id", "tenant_id"],
+            ["intake_runs.id", "intake_runs.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_draft_versions_intake_tenant",
+        ),
+        UniqueConstraint(
+            "tenant_id", "intake_run_id", "version", name="uq_draft_versions_intake_version"
+        ),
+        CheckConstraint(
+            "source in ('extraction', 'operator_edit', 'revalidation')",
+            name="ck_draft_versions_source",
+        ),
+        Index("ix_draft_versions_tenant_intake", "tenant_id", "intake_run_id", "version"),
+    )
+
+
+class ValidationSnapshot(Base):
+    __tablename__ = "validation_snapshots"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    intake_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    draft_version_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    rules_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    report_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["draft_version_id", "tenant_id"],
+            ["draft_versions.id", "draft_versions.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_validation_snapshots_draft_tenant",
+        ),
+        UniqueConstraint("id", "tenant_id", name="uq_validation_snapshots_id_tenant"),
+        Index(
+            "ix_validation_snapshots_tenant_intake",
+            "tenant_id",
+            "intake_run_id",
+            "created_at",
+        ),
+    )
+
+
+class ValidationIssueRecord(Base):
+    __tablename__ = "validation_issues"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    validation_snapshot_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    code: Mapped[str] = mapped_column(String(80), nullable=False)
+    severity: Mapped[str] = mapped_column(String(20), nullable=False)
+    field_paths_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    safe_message: Mapped[str] = mapped_column(String(500), nullable=False)
+    evidence_refs_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    rule_refs_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    acknowledged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    resolved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["validation_snapshot_id", "tenant_id"],
+            ["validation_snapshots.id", "validation_snapshots.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_validation_issues_snapshot_tenant",
+        ),
+        CheckConstraint(
+            "severity in ('blocking', 'warning', 'info')",
+            name="ck_validation_issues_severity",
+        ),
+        Index("ix_validation_issues_tenant_snapshot", "tenant_id", "validation_snapshot_id"),
+    )
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    intake_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
+    acknowledged_warnings_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    current_draft_version_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    current_validation_snapshot_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["intake_run_id", "tenant_id"],
+            ["intake_runs.id", "intake_runs.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_reviews_intake_tenant",
+        ),
+        UniqueConstraint("tenant_id", "intake_run_id", name="uq_reviews_tenant_intake"),
+        CheckConstraint(
+            "status in ('open', 'submitted', 'approved', 'stale')",
+            name="ck_reviews_status",
+        ),
+        Index("ix_reviews_tenant_updated", "tenant_id", "updated_at"),
+    )
+
+
+class ReviewEdit(Base):
+    __tablename__ = "review_edits"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    draft_version_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    field_path: Mapped[str] = mapped_column(String(160), nullable=False)
+    before_json: Mapped[str] = mapped_column(Text, nullable=False)
+    after_json: Mapped[str] = mapped_column(Text, nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    actor_user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["review_id", "tenant_id"],
+            ["reviews.id", "reviews.tenant_id"],
+            ondelete="CASCADE",
+            name="fk_review_edits_review_tenant",
+        ),
+        Index("ix_review_edits_tenant_review", "tenant_id", "review_id", "created_at"),
     )
 
 

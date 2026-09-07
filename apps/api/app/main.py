@@ -11,6 +11,7 @@ from apps.api.app.auth.service import AuthenticationError, AuthService, issue_to
 from apps.api.app.config.settings import Settings, get_settings
 from apps.api.app.db.session import create_session_factory
 from apps.api.app.health.routes import router as health_router
+from apps.api.app.intakes.routes import router as intakes_router
 from packages.artifacts.service import ArtifactIngestionService
 from packages.domain.artifacts import ArtifactLimits
 from packages.domain.identity import Role, TenantContext
@@ -127,6 +128,7 @@ def create_app(
 
     app.include_router(access_router)
     app.include_router(artifacts_router)
+    app.include_router(intakes_router)
     return app
 
 

@@ -225,6 +225,11 @@ def _is_allowed_path(path: str) -> bool:
     return path in _ALLOWED_EXACT_PATHS or _ALLOWED_LINE_PATH.fullmatch(path) is not None
 
 
+def is_supported_field_path(path: str) -> bool:
+    """Public allowlist used by operator edits as well as model verification."""
+    return _is_allowed_path(path)
+
+
 def _verify_evidence(ref: ModelEvidenceRef, evidence: list[EvidenceInput]) -> EvidenceRef:
     match = next(
         (

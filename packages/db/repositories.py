@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, func, or_, select
@@ -5,14 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.db.models import (
     Artifact,
+    DraftVersion,
     IntakeRun,
     Membership,
     RetrievalHit,
     RetrievalRun,
+    Review,
+    ReviewEdit,
     SopChunk,
     SopDocument,
     Tenant,
     User,
+    ValidationIssueRecord,
+    ValidationSnapshot,
 )
 
 
@@ -232,6 +238,120 @@ class IntakeRunRepository:
             .limit(limit)
         )
         return list(result.scalars())
+
+    async def create(self, session: AsyncSession, *, intake_run: IntakeRun) -> IntakeRun:
+        session.add(intake_run)
+        await session.commit()
+        await session.refresh(intake_run)
+        return intake_run
+
+    async def update_status(
+        self,
+        session: AsyncSession,
+        *,
+        tenant_id: str,
+        intake_run_id: str,
+        status: str,
+    ) -> IntakeRun | None:
+        intake_run = await self.get(session, tenant_id=tenant_id, intake_run_id=intake_run_id)
+        if intake_run is None:
+            return None
+        intake_run.status = status
+        await session.commit()
+        await session.refresh(intake_run)
+        return intake_run
+
+
+class ReviewRepository:
+    """Review records and immutable versions are always tenant-filtered."""
+
+    async def get(
+        self, session: AsyncSession, *, tenant_id: str, intake_run_id: str
+    ) -> Review | None:
+        result = await session.execute(
+            select(Review).where(
+                Review.tenant_id == tenant_id,
+                Review.intake_run_id == intake_run_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_draft(
+        self, session: AsyncSession, *, tenant_id: str, draft_version_id: str
+    ) -> DraftVersion | None:
+        result = await session.execute(
+            select(DraftVersion).where(
+                DraftVersion.tenant_id == tenant_id,
+                DraftVersion.id == draft_version_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_snapshot(
+        self, session: AsyncSession, *, tenant_id: str, snapshot_id: str
+    ) -> ValidationSnapshot | None:
+        result = await session.execute(
+            select(ValidationSnapshot).where(
+                ValidationSnapshot.tenant_id == tenant_id,
+                ValidationSnapshot.id == snapshot_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def list_issues(
+        self, session: AsyncSession, *, tenant_id: str, snapshot_id: str
+    ) -> list[ValidationIssueRecord]:
+        result = await session.execute(
+            select(ValidationIssueRecord)
+            .where(
+                ValidationIssueRecord.tenant_id == tenant_id,
+                ValidationIssueRecord.validation_snapshot_id == snapshot_id,
+            )
+            .order_by(ValidationIssueRecord.id.asc())
+        )
+        return list(result.scalars())
+
+    async def list_edits(
+        self, session: AsyncSession, *, tenant_id: str, review_id: str
+    ) -> list[ReviewEdit]:
+        result = await session.execute(
+            select(ReviewEdit)
+            .where(ReviewEdit.tenant_id == tenant_id, ReviewEdit.review_id == review_id)
+            .order_by(ReviewEdit.created_at.asc(), ReviewEdit.id.asc())
+        )
+        return list(result.scalars())
+
+    async def next_draft_version(
+        self, session: AsyncSession, *, tenant_id: str, intake_run_id: str
+    ) -> int:
+        result = await session.execute(
+            select(func.coalesce(func.max(DraftVersion.version), 0)).where(
+                DraftVersion.tenant_id == tenant_id,
+                DraftVersion.intake_run_id == intake_run_id,
+            )
+        )
+        return int(result.scalar_one()) + 1
+
+    async def save_review_bundle(
+        self,
+        session: AsyncSession,
+        *,
+        review: Review,
+        draft: DraftVersion,
+        snapshot: ValidationSnapshot,
+        issues: list[ValidationIssueRecord],
+        edits: list[ReviewEdit] | None = None,
+    ) -> None:
+        session.add(draft)
+        session.add(snapshot)
+        session.add_all(issues)
+        if edits:
+            session.add_all(edits)
+        session.add(review)
+        await session.commit()
+
+    async def json_payload(self, draft: DraftVersion) -> dict:
+        return json.loads(draft.payload_json)
 
 
 def _metadata_scope(column, value: str | None):
