@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic evidence-first review workspace</title>
+  <desc id="desc">Synthetic portfolio visual showing source, canonical fields and deterministic policy panels.</desc>
+  <rect width="1600" height="1000" fill="#f2f0e8"/>
+  <text x="70" y="70" font-family="Arial" font-size="22" font-weight="700" fill="#182522">OPS INTAKE / CONTROL DESK</text>
+  <text x="70" y="118" font-family="Georgia" font-size="54" font-weight="700" fill="#182522">Make the evidence earn its way through.</text>
+  <text x="70" y="156" font-family="Arial" font-size="18" fill="#40524d">Synthetic Tenant A · provider-free review workspace</text>
+  <rect x="70" y="210" width="440" height="690" rx="18" fill="#edf2ec" stroke="#b9c6bd"/>
+  <rect x="530" y="210" width="500" height="690" rx="18" fill="#fbfaf5" stroke="#b9c6bd"/>
+  <rect x="1050" y="210" width="480" height="690" rx="18" fill="#fbfaf5" stroke="#b9c6bd"/>
+  <text x="100" y="255" font-family="Arial" font-size="16" font-weight="700" fill="#40524d">01 / SOURCE · ESCAPED</text>
+  <rect x="100" y="285" width="380" height="270" rx="12" fill="#fff" stroke="#d7ddd5"/>
+  <text x="125" y="330" font-family="monospace" font-size="16" fill="#182522">CUSTOMER ACCT-A</text>
+  <text x="125" y="365" font-family="monospace" font-size="16" fill="#182522">REFERENCE REQ-A-100</text>
+  <text x="125" y="400" font-family="monospace" font-size="16" fill="#182522">SHIP DATE 2026-09-12</text>
+  <rect x="120" y="421" width="210" height="27" fill="#b9e5d0"/>
+  <text x="125" y="442" font-family="monospace" font-size="16" fill="#182522">SKU-100 / QTY 2</text>
+  <text x="100" y="610" font-family="Arial" font-size="16" font-weight="700" fill="#182522">Evidence selected</text>
+  <text x="100" y="640" font-family="monospace" font-size="15" fill="#40524d">line_items[0].quantity · ev-quantity</text>
+  <text x="560" y="255" font-family="Arial" font-size="16" font-weight="700" fill="#40524d">02 / NORMALIZED DRAFT</text>
+  <text x="560" y="305" font-family="monospace" font-size="17" fill="#40524d">customer_account_code</text>
+  <text x="560" y="334" font-family="Arial" font-size="22" font-weight="700" fill="#182522">ACCT-A</text>
+  <text x="560" y="390" font-family="monospace" font-size="17" fill="#40524d">requested_ship_date</text>
+  <text x="560" y="419" font-family="Arial" font-size="22" font-weight="700" fill="#182522">2026-09-12</text>
+  <text x="560" y="475" font-family="monospace" font-size="17" fill="#40524d">line_items[0].quantity</text>
+  <text x="560" y="504" font-family="Arial" font-size="22" font-weight="700" fill="#182522">2 EA</text>
+  <rect x="560" y="570" width="420" height="100" rx="12" fill="#f5f6f1" stroke="#d7ddd5"/>
+  <text x="585" y="610" font-family="Arial" font-size="16" font-weight="700" fill="#182522">Operator correction seam</text>
+  <text x="585" y="640" font-family="Arial" font-size="15" fill="#40524d">original value + evidence + reason</text>
+  <text x="1080" y="255" font-family="Arial" font-size="16" font-weight="700" fill="#40524d">03 / POLICY GATE</text>
+  <rect x="1080" y="285" width="420" height="120" rx="12" fill="#eef7f6" stroke="#b9d9d0"/>
+  <text x="1105" y="325" font-family="monospace" font-size="15" fill="#286a67">sop:harborline:fulfillment:1</text>
+  <text x="1105" y="358" font-family="Arial" font-size="17" font-weight="700" fill="#182522">Effective rule cited</text>
+  <rect x="1080" y="455" width="420" height="250" rx="12" fill="#182522"/>
+  <text x="1105" y="500" font-family="Arial" font-size="16" fill="#b9e5d0">ACTION PREVIEW</text>
+  <text x="1105" y="545" font-family="Georgia" font-size="32" fill="#fff">Draft fulfillment</text>
+  <text x="1105" y="580" font-family="Arial" font-size="15" fill="#bfd3ca">Immutable payload · no write performed</text>
+  <text x="1105" y="630" font-family="monospace" font-size="14" fill="#b9e5d0">payload hash · 8af2c0d9...</text>
+  <rect x="1105" y="660" width="190" height="34" rx="7" fill="#b9e5d0"/>
+  <text x="1125" y="683" font-family="Arial" font-size="15" font-weight="700" fill="#182522">Create preview</text>
+  <text x="70" y="950" font-family="Arial" font-size="14" fill="#40524d">SYNTHETIC PORTFOLIO ASSET · no customer data · no operational credentials</text>
+</svg>

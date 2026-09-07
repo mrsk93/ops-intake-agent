@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic immutable action preview</title>
+  <desc id="desc">Synthetic portfolio visual showing a preview bound to versions and a payload hash before approval.</desc>
+  <rect width="1600" height="1000" fill="#f2f0e8"/>
+  <text x="70" y="80" font-family="Arial" font-size="20" font-weight="700" fill="#182522">OPS INTAKE / ACTION PREVIEW</text>
+  <text x="70" y="150" font-family="Georgia" font-size="58" font-weight="700" fill="#182522">Preview first. Approve second.</text>
+  <text x="70" y="195" font-family="Arial" font-size="20" fill="#40524d">Synthetic REQ-A-100 · draft fulfillment request</text>
+  <rect x="70" y="250" width="930" height="570" rx="18" fill="#182522"/>
+  <text x="115" y="320" font-family="Arial" font-size="18" fill="#b9e5d0">IMMUTABLE PROPOSED ACTION</text>
+  <text x="115" y="385" font-family="Georgia" font-size="44" fill="#fff">Create draft fulfillment request</text>
+  <text x="115" y="455" font-family="Arial" font-size="20" fill="#bfd3ca">Target: mock operations adapter</text>
+  <text x="115" y="505" font-family="monospace" font-size="18" fill="#b9e5d0">tenant_id · tenant-a</text>
+  <text x="115" y="545" font-family="monospace" font-size="18" fill="#b9e5d0">external_ref · REQ-A-100</text>
+  <text x="115" y="585" font-family="monospace" font-size="18" fill="#b9e5d0">service · STANDARD · quantity · 2 EA</text>
+  <text x="115" y="665" font-family="monospace" font-size="16" fill="#bfd3ca">payload_sha256 · 8af2c0d9b07f...</text>
+  <text x="115" y="700" font-family="monospace" font-size="16" fill="#bfd3ca">validation · policy-1.0 · review_version · 2</text>
+  <rect x="115" y="735" width="220" height="42" rx="7" fill="#b9e5d0"/>
+  <text x="145" y="763" font-family="Arial" font-size="16" font-weight="700" fill="#182522">Ready for approval</text>
+  <rect x="1050" y="250" width="470" height="570" rx="18" fill="#fbfaf5" stroke="#b9c6bd"/>
+  <text x="1090" y="325" font-family="Arial" font-size="18" font-weight="700" fill="#40524d">CONTROL CHECKS</text>
+  <text x="1090" y="400" font-family="Arial" font-size="20" fill="#182522">✓ reviewer membership</text>
+  <text x="1090" y="455" font-family="Arial" font-size="20" fill="#182522">✓ no blocking issues</text>
+  <text x="1090" y="510" font-family="Arial" font-size="20" fill="#182522">✓ current SOP version</text>
+  <text x="1090" y="565" font-family="Arial" font-size="20" fill="#182522">✓ immutable payload hash</text>
+  <text x="1090" y="650" font-family="Arial" font-size="18" fill="#a94127">This creates a draft only.</text>
+  <text x="70" y="930" font-family="Arial" font-size="14" fill="#40524d">SYNTHETIC PORTFOLIO ASSET · explicit approval still required · no write yet</text>
+</svg>

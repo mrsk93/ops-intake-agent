@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic uncertain execution recovery</title>
+  <desc id="desc">Synthetic portfolio visual showing lookup and read-back after a timeout with one remote record.</desc>
+  <rect width="1600" height="1000" fill="#f2f0e8"/>
+  <text x="70" y="80" font-family="Arial" font-size="20" font-weight="700" fill="#182522">OPS INTAKE / EXECUTION RECOVERY</text>
+  <text x="70" y="150" font-family="Georgia" font-size="58" font-weight="700" fill="#182522">Uncertain is a state, not a retry button.</text>
+  <text x="70" y="195" font-family="Arial" font-size="20" fill="#40524d">Synthetic timeout-after-commit scenario · REQ-A-100</text>
+  <line x1="180" y1="500" x2="1410" y2="500" stroke="#b9c6bd" stroke-width="8"/>
+  <circle cx="220" cy="500" r="48" fill="#b9e5d0"/><circle cx="610" cy="500" r="48" fill="#fff0e6" stroke="#f2b3a5" stroke-width="5"/><circle cx="1000" cy="500" r="48" fill="#9bd9ea"/><circle cx="1390" cy="500" r="48" fill="#b9e5d0"/>
+  <text x="155" y="610" font-family="Arial" font-size="20" font-weight="700" fill="#182522">approve</text>
+  <text x="540" y="610" font-family="Arial" font-size="20" font-weight="700" fill="#a94127">timeout</text>
+  <text x="930" y="610" font-family="Arial" font-size="20" font-weight="700" fill="#236779">lookup</text>
+  <text x="1320" y="610" font-family="Arial" font-size="20" font-weight="700" fill="#1f674e">read-back</text>
+  <text x="165" y="475" font-family="monospace" font-size="17" fill="#182522">1</text>
+  <text x="555" y="475" font-family="monospace" font-size="17" fill="#a94127">uncertain</text>
+  <text x="965" y="475" font-family="monospace" font-size="17" fill="#236779">same key</text>
+  <text x="1350" y="475" font-family="monospace" font-size="17" fill="#1f674e">verified</text>
+  <rect x="230" y="720" width="1140" height="120" rx="18" fill="#182522"/>
+  <text x="275" y="770" font-family="monospace" font-size="18" fill="#b9e5d0">create_calls · 1   remote_record_count · 1   read_back_verified · true</text>
+  <text x="275" y="807" font-family="Arial" font-size="18" fill="#bfd3ca">Stable idempotency prevents a duplicate remote draft.</text>
+  <text x="70" y="930" font-family="Arial" font-size="14" fill="#40524d">SYNTHETIC PORTFOLIO ASSET · mock operations adapter · no external system</text>
+</svg>

@@ -147,6 +147,26 @@ Status: Implemented; deployment-specific controls are documented as residual ris
 - Added repository secret/container/lockfile hygiene scan and CI wiring; the
   Compose MinIO image no longer uses a floating `latest` tag.
 
+## M12 — Portfolio release
+
+Status: Implemented; release assets are synthetic and the full-stack Compose
+runtime remains unavailable locally because Docker is not installed.
+
+- Added the portfolio case study, model card, data-flow diagram, evaluation
+  report, short runbook and release checklist.
+- Added deterministic `make demo-injection` and
+  `make demo-timeout-recovery` stories. The first blocks instruction-like
+  document content with zero writes; the second resolves a post-commit timeout
+  with the same idempotency key and read-back.
+- Added six synthetic SVG portfolio visuals covering review, missing data,
+  prompt injection, action preview, timeout recovery and evaluation.
+- Added six browser PNG captures plus six SVG storyboards and a 150-second
+  WebM walkthrough of the standalone synthetic review shell.
+- Added `make release-check`, which verifies the release tree and runs lint,
+  tests, M12 contract tests, fake evaluation, security scan and both demos.
+- Added a fresh-clone rehearsal and release tag procedure without adding any
+  external service or credential requirement.
+
 ## Checks
 
 - `uv lock --check`: passed; 87 Python packages resolved, including `pypdf==6.17.0` and `python-multipart==0.0.32`.
@@ -168,12 +188,15 @@ Status: Implemented; deployment-specific controls are documented as residual ris
   production-config, formula-safety and repository-scan tests plus identity
   rate-limit integration coverage.
 - `uv lock --check`: passed after promoting the pinned LangGraph runtime dependencies.
-- `make test`: passed; 70 tests, with 1 existing upstream Starlette/anyio deprecation warning.
+- `make test`: passed; 75 tests, with 1 existing upstream Starlette/anyio deprecation warning.
 - `make eval-fake`: passed; 66 cases, extraction/evidence/quantity 1.0,
   retrieval recall@3 1.0, zero wrong-tenant hits, zero prompt-injection
   auto-approvals, zero duplicate remote drafts and workflow accuracy 1.0.
 - `make security-scan`: passed; no detected secret pattern, floating
   container tag or missing lockfile.
+- `make test-m12`: passed; 4 portfolio contract tests.
+- `make release-check`: passed; release tree, lint, 75 tests, M12 tests, fake
+  evaluation, security scan and both deterministic demos.
 - `alembic upgrade head` against temporary SQLite: passed through `0007_approval_execution`.
 - Synthetic seed against temporary SQLite: passed; reset refusal against an
   unapproved SQLite target was also confirmed.
@@ -185,4 +208,4 @@ Status: Implemented; deployment-specific controls are documented as residual ris
 
 ## Handoff boundary
 
-M0 through M11 are complete. Portfolio release remains deferred to M12.
+M0 through M12 are complete. No further milestone is defined by this plan.

@@ -1,7 +1,7 @@
 UV_CACHE_DIR ?= /private/tmp/ops-intake-agent-uv-cache
 export UV_CACHE_DIR
 
-.PHONY: sync lint test-m0 test-m1 test-m2 test-m3 test-m4 test-m5 test-m6 test-m7 test-m8 test-m9 test-m10 test-m11 test test-security db-migrate seed reset-demo dev web-lint generate-fixtures eval-fake eval-live security-scan
+.PHONY: sync lint test-m0 test-m1 test-m2 test-m3 test-m4 test-m5 test-m6 test-m7 test-m8 test-m9 test-m10 test-m11 test-m12 test test-security db-migrate seed reset-demo dev web-lint generate-fixtures eval-fake eval-live security-scan demo-injection demo-timeout-recovery release-check
 
 sync:
 	uv sync --dev
@@ -54,6 +54,9 @@ test-m10:
 test-m11:
 	uv run pytest -q tests/security tests/integration/test_identity.py
 
+test-m12:
+	uv run pytest -q tests/portfolio
+
 test:
 	uv run pytest -q
 
@@ -80,3 +83,19 @@ eval-live:
 
 security-scan:
 	uv run python -m scripts.security_scan
+
+demo-injection:
+	uv run python -m scripts.demo_injection
+
+demo-timeout-recovery:
+	uv run python -m scripts.demo_timeout_recovery
+
+release-check:
+	uv run python -m scripts.rehearse_release
+	$(MAKE) lint
+	$(MAKE) test
+	$(MAKE) test-m12
+	$(MAKE) eval-fake
+	$(MAKE) security-scan
+	$(MAKE) demo-injection
+	$(MAKE) demo-timeout-recovery
