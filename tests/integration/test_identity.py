@@ -115,3 +115,22 @@ async def test_membership_status_is_rechecked(db_session_factory, test_settings)
             await session.commit()
 
         assert client.get("/api/viewer/ping", headers=headers).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_rate_limit_fails_closed_without_revealing_auth_state(
+    db_session_factory, test_settings
+) -> None:
+    await seed_identity(db_session_factory)
+    limited_settings = test_settings.model_copy(update={"auth_rate_limit_per_window": 1})
+    app = create_app(limited_settings, session_factory=db_session_factory)
+    with TestClient(app) as client:
+        assert (
+            client.post(
+                "/api/auth/login", json={"email": "a@example.test", "password": "pw"}
+            ).status_code
+            == 200
+        )
+        limited = client.post("/api/auth/login", json={"email": "a@example.test", "password": "pw"})
+        assert limited.status_code == 429
+        assert limited.json()["detail"] == "too many requests"

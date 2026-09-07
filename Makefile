@@ -1,7 +1,7 @@
 UV_CACHE_DIR ?= /private/tmp/ops-intake-agent-uv-cache
 export UV_CACHE_DIR
 
-.PHONY: sync lint test-m0 test-m1 test-m2 test-m3 test-m4 test-m5 test-m6 test-m7 test-m8 test-m9 test-m10 test test-security db-migrate seed reset-demo dev web-lint generate-fixtures eval-fake eval-live
+.PHONY: sync lint test-m0 test-m1 test-m2 test-m3 test-m4 test-m5 test-m6 test-m7 test-m8 test-m9 test-m10 test-m11 test test-security db-migrate seed reset-demo dev web-lint generate-fixtures eval-fake eval-live security-scan
 
 sync:
 	uv sync --dev
@@ -51,6 +51,9 @@ test-m9:
 test-m10:
 	uv run pytest -q tests/evaluation
 
+test-m11:
+	uv run pytest -q tests/security tests/integration/test_identity.py
+
 test:
 	uv run pytest -q
 
@@ -74,3 +77,6 @@ eval-fake:
 
 eval-live:
 	uv run python -m scripts.run_eval --provider live $(LIVE_EVAL_ARGS)
+
+security-scan:
+	uv run python -m scripts.security_scan

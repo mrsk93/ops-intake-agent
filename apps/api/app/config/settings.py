@@ -25,12 +25,20 @@ class Settings(BaseSettings):
     max_table_rows: int = Field(default=10_000, ge=1, le=1_000_000)
     max_extracted_text_chars: int = Field(default=1_000_000, ge=1_000, le=10_000_000)
     artifact_retention_days: int = Field(default=30, ge=1, le=3650)
+    derived_text_retention_days: int = Field(default=30, ge=1, le=3650)
+    raw_provider_output_retention_days: int = Field(default=7, ge=1, le=3650)
+    canonical_metadata_retention_days: int = Field(default=90, ge=1, le=3650)
     auth_jwt_secret: str = "local-only-demo-secret-change-me"
     auth_token_ttl_minutes: int = Field(default=30, ge=5, le=1440)
     enable_demo_controls: bool = True
     model_provider: Literal["fake", "openai"] = "fake"
     ocr_provider: Literal["fake", "local"] = "fake"
     ops_provider: Literal["mock", "external"] = "mock"
+    rate_limit_provider: Literal["memory", "redis"] = "memory"
+    rate_limit_window_seconds: int = Field(default=60, ge=1, le=3600)
+    auth_rate_limit_per_window: int = Field(default=20, ge=1, le=1000)
+    approval_rate_limit_per_window: int = Field(default=20, ge=1, le=1000)
+    credential_encryption_provider: Literal["unconfigured", "fake", "external"] = "unconfigured"
     openai_api_key: str | None = None
     openai_model: str | None = None
     model_timeout_seconds: float = Field(default=45.0, ge=1, le=300)
@@ -53,6 +61,10 @@ class Settings(BaseSettings):
                 raise ValueError("AUTH_JWT_SECRET must be explicitly configured in production")
             if self.artifact_storage_provider in {"local", "fake"}:
                 raise ValueError("ARTIFACT_STORAGE_PROVIDER must be s3 in production")
+            if self.rate_limit_provider != "redis":
+                raise ValueError("production requires a Redis rate limit provider")
+            if self.credential_encryption_provider != "external":
+                raise ValueError("production requires an external credential encryption provider")
         return self
 
 

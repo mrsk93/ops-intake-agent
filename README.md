@@ -2,7 +2,7 @@
 
 Ops Intake Agent is a production-shaped portfolio demonstration of governed document intake. AI is limited to classification and structured extraction; deterministic policy, evidence and a human control any future operational write.
 
-## M0–M9 local quickstart
+## M0–M11 local quickstart
 
 Requirements: Python 3.12, uv 0.12.2, Node 22, pnpm 10.33.0, and Docker Compose for the full stack.
 
@@ -47,3 +47,10 @@ idempotency, mock operations execution, lookup/read-back recovery, receipt
 verification, manual exceptions and an audit timeline. The operations adapter
 is deterministic and provider-free; no external operations credentials are
 used by the demo.
+
+M10 adds 66 committed synthetic evaluation cases, fake-provider graders,
+reproducible JSON/Markdown reports and a CI-safe `make eval-fake` gate. M11
+adds security redaction, rate limits, production fail-closed checks, retention
+defaults, secret/container/lockfile scanning, a threat model and an operations
+runbook. Production KMS, malware scanning, RLS, vulnerability feeds and backup
+execution remain deployment-specific adaptations.

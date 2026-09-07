@@ -119,6 +119,34 @@ Status: Implemented.
   tenant-filtered audit/execution timeline routes. No raw provider payload is
   stored.
 
+## M10 — Evaluation dataset and harness
+
+Status: Implemented.
+
+- Added 66 committed synthetic cases with explicit provenance, document class,
+  canonical gold values, evidence references, expected rules/issues, preview
+  decisions and retry action counts. Categories cover clean digital, tabular,
+  scanned/noisy, conflict/amendment, missing/ambiguous, adversarial and
+  no-authoritative-rule cases.
+- Added fake-provider extraction, retrieval, safety and workflow graders with
+  deterministic thresholds and safe failing-case references.
+- Added JSON/Markdown reports under `evals/results/`, `make eval-fake`,
+  `make generate-fixtures` and an explicitly guarded live-runner seam. CI uses
+  only the fake provider and needs no API key.
+
+## M11 — Security and operations hardening
+
+Status: Implemented; deployment-specific controls are documented as residual risk.
+
+- Added threat model, security checklist and failure/backup/restore runbook.
+- Added structured log/error redaction, untrusted-content scanning,
+  spreadsheet-formula escaping, bounded login/approval/recovery rate limits,
+  production fail-closed provider settings and a credential encryption port.
+- Added configurable retention defaults and preserved tenant-scoped artifact
+  expiry behavior: content is deleted while safe metadata and hashes remain.
+- Added repository secret/container/lockfile hygiene scan and CI wiring; the
+  Compose MinIO image no longer uses a floating `latest` tag.
+
 ## Checks
 
 - `uv lock --check`: passed; 87 Python packages resolved, including `pypdf==6.17.0` and `python-multipart==0.0.32`.
@@ -134,8 +162,18 @@ Status: Implemented.
 - `make test-m7`: passed; 4 graph interrupt/restart and workflow-run isolation tests.
 - `make test-m8`: passed; 3 review API versioning, safe-state and authorization tests.
 - `make test-m9`: passed; 4 approval, stale/unauthorized guard, timeout recovery and receipt mismatch tests.
+- `make test-m10`: passed; synthetic dataset provenance/composition,
+  reproducibility, threshold and safe-report tests.
+- `make test-m11`: passed; redaction, rate-limit, credential-interface,
+  production-config, formula-safety and repository-scan tests plus identity
+  rate-limit integration coverage.
 - `uv lock --check`: passed after promoting the pinned LangGraph runtime dependencies.
-- `make test`: passed; 59 tests, with 1 existing upstream Starlette/anyio deprecation warning.
+- `make test`: passed; 70 tests, with 1 existing upstream Starlette/anyio deprecation warning.
+- `make eval-fake`: passed; 66 cases, extraction/evidence/quantity 1.0,
+  retrieval recall@3 1.0, zero wrong-tenant hits, zero prompt-injection
+  auto-approvals, zero duplicate remote drafts and workflow accuracy 1.0.
+- `make security-scan`: passed; no detected secret pattern, floating
+  container tag or missing lockfile.
 - `alembic upgrade head` against temporary SQLite: passed through `0007_approval_execution`.
 - Synthetic seed against temporary SQLite: passed; reset refusal against an
   unapproved SQLite target was also confirmed.
@@ -147,5 +185,4 @@ Status: Implemented.
 
 ## Handoff boundary
 
-M0 through M9 are complete. Evaluation, security/operations hardening and
-portfolio release remain deferred to M10-M12.
+M0 through M11 are complete. Portfolio release remains deferred to M12.

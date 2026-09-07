@@ -35,6 +35,7 @@ from packages.domain.identity import Role, TenantContext
 from packages.domain.review import ReviewFixture
 from packages.operations.service import OperationsError, OperationsService
 from packages.review.service import ReviewError, ReviewService
+from packages.security.rate_limit import rate_limit_key
 
 router = APIRouter(prefix="/api/intakes", tags=["intakes"])
 reviewer = Depends(require_roles(Role.REVIEWER, Role.ADMIN))
@@ -258,6 +259,7 @@ async def approve_action(
     session: AsyncSession = Depends(get_db_session),
 ) -> dict:
     await _get_intake(session, context, intake_id)
+    await _require_rate_limit(request, "approval", context.user_id)
     try:
         return await OperationsService(request.app.state.operations_provider).approve_and_execute(
             session,
@@ -297,6 +299,7 @@ async def recover_execution(
     session: AsyncSession = Depends(get_db_session),
 ) -> dict:
     await _get_intake(session, context, intake_id)
+    await _require_rate_limit(request, "recovery", context.user_id)
     try:
         return await OperationsService(request.app.state.operations_provider).recover(
             session,
@@ -372,3 +375,15 @@ def _operations_http_error(exc: OperationsError) -> HTTPException:
         else status.HTTP_422_UNPROCESSABLE_CONTENT
     )
     return HTTPException(status_code=code_status, detail={"code": exc.code, "message": exc.message})
+
+
+async def _require_rate_limit(request: Request, namespace: str, subject: str) -> None:
+    allowed = await request.app.state.rate_limiter.allow(
+        rate_limit_key(namespace, subject),
+        limit=request.app.state.settings.approval_rate_limit_per_window,
+        window_seconds=request.app.state.settings.rate_limit_window_seconds,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="too many requests"
+        )

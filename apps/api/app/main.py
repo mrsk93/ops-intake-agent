@@ -17,6 +17,8 @@ from packages.domain.artifacts import ArtifactLimits
 from packages.domain.identity import Role, TenantContext
 from packages.providers.ports import OcrProvider, OperationsPort, StoragePort
 from packages.providers.storage import LocalFileStorage, S3Storage
+from packages.security.credentials import CredentialEncryptionUnavailable, DeterministicTestCipher
+from packages.security.rate_limit import InMemoryRateLimiter, RedisRateLimiter, rate_limit_key
 from packages.testkit.fakes import FakeOcrProvider, FakeStorage, MockOperations
 
 
@@ -62,6 +64,8 @@ def create_app(
     app.state.storage_provider = resolved_storage
     app.state.ocr_provider = resolved_ocr
     app.state.operations_provider = resolved_operations
+    app.state.rate_limiter = _rate_limiter_for_settings(resolved_settings, redis_client)
+    app.state.credential_cipher = _credential_cipher_for_settings(resolved_settings)
     app.state.artifact_limits = artifact_limits
     app.state.artifact_service = ArtifactIngestionService(
         resolved_storage,
@@ -76,6 +80,15 @@ def create_app(
     async def login(
         payload: LoginRequest, request: Request, session=Depends(get_db_session)
     ) -> LoginResponse:
+        allowed = await request.app.state.rate_limiter.allow(
+            rate_limit_key("login", payload.email),
+            limit=request.app.state.settings.auth_rate_limit_per_window,
+            window_seconds=request.app.state.settings.rate_limit_window_seconds,
+        )
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="too many requests"
+            )
         try:
             user, memberships = await AuthService().login(
                 session,
@@ -176,6 +189,20 @@ class _UnavailableOperations:
 
 def _operations_for_settings(settings: Settings) -> OperationsPort:
     return MockOperations() if settings.ops_provider == "mock" else _UnavailableOperations()
+
+
+def _rate_limiter_for_settings(settings: Settings, redis_client):
+    return (
+        RedisRateLimiter(redis_client)
+        if settings.rate_limit_provider == "redis"
+        else InMemoryRateLimiter()
+    )
+
+
+def _credential_cipher_for_settings(settings: Settings):
+    if settings.credential_encryption_provider == "fake":
+        return DeterministicTestCipher()
+    return CredentialEncryptionUnavailable()
 
 
 app = create_app()
