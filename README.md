@@ -2,7 +2,7 @@
 
 Ops Intake Agent is a production-shaped portfolio demonstration of governed document intake. AI is limited to classification and structured extraction; deterministic policy, evidence and a human control any future operational write.
 
-## M0–M7 local quickstart
+## M0–M9 local quickstart
 
 Requirements: Python 3.12, uv 0.12.2, Node 22, pnpm 10.33.0, and Docker Compose for the full stack.
 
@@ -39,3 +39,11 @@ LangGraph workflow through a persisted human-review interrupt. Unit tests use
 checkpointer with the separate setup helper in
 `packages/workflow/checkpoint.py`. LangGraph checkpoint tables are intentionally
 not part of the application Alembic chain.
+
+M8 adds an evidence-first review workspace with immutable draft versions,
+deterministic validation snapshots, optimistic review versions and immutable
+action previews. M9 adds explicit reviewer/admin approval, stable
+idempotency, mock operations execution, lookup/read-back recovery, receipt
+verification, manual exceptions and an audit timeline. The operations adapter
+is deterministic and provider-free; no external operations credentials are
+used by the demo.

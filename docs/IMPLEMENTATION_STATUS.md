@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-09-06
+Updated: 2026-09-07
 
 ## M0 — Repository audit and architecture decisions
 
@@ -90,6 +90,35 @@ Status: Implemented.
   application Alembic migrations.
 - Added graph reconstruction/resume, stale-review and unsafe-state tests.
 
+## M8 — Review UI and versioning
+
+Status: Implemented.
+
+- Added tenant-scoped intake queue, upload/submit status and review routes.
+- Added immutable draft versions, validation snapshots/issues, evidence-bound
+  edits, optimistic review versions, warning acknowledgement and
+  deterministic revalidation.
+- Added immutable action previews bound to the current draft version,
+  validation snapshot, review version, payload hash and idempotency key.
+- Added the three-panel synthetic review workspace with queue fixtures,
+  evidence highlighting, escaped source/model text, issue/rule citations and
+  preview invalidation after changes.
+
+## M9 — Approval, guarded execution and recovery
+
+Status: Implemented.
+
+- Added reviewer/admin-only explicit approval with current tenant membership,
+  review/draft/validation/hash guards and deterministic revalidation immediately
+  before provider execution.
+- Added proposed-action claim/status transitions and stable tenant/payload
+  idempotency keys; no model output or UI event can invoke the operations port.
+- Added deterministic mock operations behavior for before-commit timeout,
+  after-commit timeout, lookup/read-back recovery and receipt mismatch.
+- Added bounded receipt persistence, execution attempts, manual exceptions and
+  tenant-filtered audit/execution timeline routes. No raw provider payload is
+  stored.
+
 ## Checks
 
 - `uv lock --check`: passed; 87 Python packages resolved, including `pypdf==6.17.0` and `python-multipart==0.0.32`.
@@ -103,14 +132,20 @@ Status: Implemented.
 - `make test-m5`: passed; 11 extraction verification, fake-provider and optional-adapter tests.
 - `make test-m6`: passed; 5 deterministic SOP chunking and retrieval tests.
 - `make test-m7`: passed; 4 graph interrupt/restart and workflow-run isolation tests.
+- `make test-m8`: passed; 3 review API versioning, safe-state and authorization tests.
+- `make test-m9`: passed; 4 approval, stale/unauthorized guard, timeout recovery and receipt mismatch tests.
 - `uv lock --check`: passed after promoting the pinned LangGraph runtime dependencies.
-- `make test`: passed; 52 tests, with 1 existing upstream Starlette/anyio deprecation warning.
-- `alembic upgrade head` against temporary SQLite: passed; `0004_workflow_runs` is head.
-- Synthetic seed against temporary SQLite: passed.
+- `make test`: passed; 59 tests, with 1 existing upstream Starlette/anyio deprecation warning.
+- `alembic upgrade head` against temporary SQLite: passed through `0007_approval_execution`.
+- Synthetic seed against temporary SQLite: passed; reset refusal against an
+  unapproved SQLite target was also confirmed.
+- Web lint, typecheck and production build passed. The repository remains on
+  the plan's Next.js 15.5.3 baseline; the installed runtime-loop skill has a
+  Next.js 16.3+ floor, so no runtime-loop probe was claimed.
 - `make dev`: not runnable locally because Docker is unavailable/permission denied; Compose remains the CI/hosted-runtime path.
 - No OpenAI API key, hosted model, OCR provider or operations system was used.
 
 ## Handoff boundary
 
-M0 through M7 are complete. Review UI, approval/execution, evaluation,
-security/operations hardening and portfolio release remain deferred to M8-M12.
+M0 through M9 are complete. Evaluation, security/operations hardening and
+portfolio release remain deferred to M10-M12.

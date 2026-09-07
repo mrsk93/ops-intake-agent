@@ -1,7 +1,7 @@
 UV_CACHE_DIR ?= /private/tmp/ops-intake-agent-uv-cache
 export UV_CACHE_DIR
 
-.PHONY: sync lint test-m0 test-m1 test-m2 test-m3 test-m4 test-m5 test test-security db-migrate seed reset-demo dev web-lint
+.PHONY: sync lint test-m0 test-m1 test-m2 test-m3 test-m4 test-m5 test-m6 test-m7 test-m8 test-m9 test test-security db-migrate seed reset-demo dev web-lint
 
 sync:
 	uv sync --dev
@@ -41,6 +41,12 @@ test-m6:
 
 test-m7:
 	uv run pytest -q tests/workflow tests/integration/test_workflow_runs.py
+
+test-m8:
+	uv run pytest -q tests/integration/test_review_api.py
+
+test-m9:
+	uv run pytest -q tests/integration/test_operations_api.py
 
 test:
 	uv run pytest -q
