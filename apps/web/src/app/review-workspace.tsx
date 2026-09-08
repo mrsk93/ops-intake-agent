@@ -57,6 +57,7 @@ export default function ReviewWorkspace() {
   const displayedSource = activeFixture === "injection" ? injectionSourceText : sourceText;
   const canPreview = !blocking && !conflict;
   const activeEvidence = selectedField.evidence[0]?.excerpt ?? "No verified excerpt";
+  const gateState = canPreview ? "ready" : "hold";
 
   const issue = useMemo(() => {
     if (activeFixture === "injection") {
@@ -120,23 +121,25 @@ export default function ReviewWorkspace() {
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">OI</div>
-          <div><div className="brand-name">Ops Intake / Control Desk</div><div className="brand-subtitle">Harborline Logistics · Tenant A · synthetic workspace</div></div>
+          <div><div className="brand-name">Ops Intake <span>/ Control Desk</span></div><div className="brand-subtitle">Harborline Logistics · Tenant A · synthetic workspace</div></div>
         </div>
-        <div className="environment-pill">Provider-free demo</div>
+        <div className="topbar-status"><span className="live-dot" aria-hidden="true" /> review queue <strong>04 open</strong></div>
+        <div className="topbar-actions"><div className="environment-pill">Provider-free demo</div><div className="operator-pill"><span className="operator-avatar">RK</span><span><strong>Reviewer</strong><small>Tenant A</small></span></div></div>
       </header>
 
       <section className="workspace" aria-labelledby="workspace-title">
         <div className="workspace-heading">
           <div>
-            <p className="eyebrow">Portfolio demo · evidence-first review workspace</p>
+            <p className="eyebrow"><span className="eyebrow-rule" /> Portfolio demo · evidence-first review workspace</p>
             <h1 id="workspace-title">Make the evidence earn its way through.</h1>
             <p className="heading-copy">Every normalized value stays tied to a verified excerpt. Edits create a new draft version; the preview disappears until deterministic checks run again.</p>
           </div>
-          <div className="heading-meta"><strong>v{reviewVersion}</strong>review version / optimistic lock</div>
+          <div className="heading-meta"><span className={`gate-state ${gateState}`}><span />{canPreview ? "Ready for preview" : "Hold for review"}</span><strong>v{reviewVersion}</strong><span>review version / optimistic lock</span></div>
         </div>
 
         <div className="queue-strip" aria-label="Synthetic intake queue">
-          {queue.map((item) => <button className="queue-card" key={item.id} aria-pressed={activeFixture === item.fixture} onClick={() => openFixture(item.fixture)} type="button"><span className="queue-card-top"><span className="queue-card-title">{item.id}</span><span className={`status-badge ${item.status}`}>{item.status}</span></span><span className="queue-card-ref">{item.ref} · {item.issue}</span></button>)}
+          <div className="queue-overview"><div><div className="panel-kicker">Review queue</div><p>Four synthetic requests · one active workspace</p></div><span className="queue-count">04</span></div>
+          <div className="queue-items">{queue.map((item) => <button className="queue-card" key={item.id} aria-pressed={activeFixture === item.fixture} onClick={() => openFixture(item.fixture)} type="button"><span className="queue-card-top"><span className="queue-card-title">{item.id}</span><span className={`status-badge ${item.status}`}>{item.status}</span></span><span className="queue-card-ref">{item.ref} · {item.issue}</span></button>)}</div>
         </div>
 
         <div className="review-grid">
@@ -144,17 +147,20 @@ export default function ReviewWorkspace() {
             <div className="panel-header"><div><div className="panel-kicker">01 / source</div><h2 className="panel-title" id="source-title">Document trace</h2></div><span className="status-badge">escaped</span></div>
             <div className="source-card"><div className="source-toolbar"><span className="source-file">request.txt</span><span>text · sha256 verified</span></div><div className="source-body" aria-label="Synthetic source text">{displayedSource.split(activeEvidence).map((part, index, all) => <span key={`${part}-${index}`}>{part}{index < all.length - 1 ? <mark>{activeEvidence}</mark> : null}</span>)}</div></div>
             <p className="source-note">Source and model text are untrusted data. This view renders it as text and never treats it as instructions.</p>
-            <div className="trace-rail"><strong>Evidence selected</strong><span>{selectedField.path} · {selectedField.evidence[0]?.id ?? "none"}</span></div>
+            <div className="trace-rail"><span className="trace-dot" aria-hidden="true" /><strong>Evidence selected</strong><span>{selectedField.path} · {selectedField.evidence[0]?.id ?? "none"}</span></div>
+            <div className="source-footer"><span>source version 01</span><span>synthetic fixture</span></div>
           </section>
 
           <section className="panel fields-panel" aria-labelledby="fields-title">
             <div className="panel-header"><div><div className="panel-kicker">02 / normalized draft</div><h2 className="panel-title" id="fields-title">Canonical fields</h2></div><span className="status-badge review">reviewer</span></div>
+            <div className="field-summary"><span><strong>{fields.filter((field) => field.value).length}</strong> populated</span><span><strong>{fields.filter((field) => field.evidence.length).length}</strong> evidenced</span><span><strong>{fields.filter((field) => field.status === "conflicting").length}</strong> flagged</span></div>
             <ul className="field-list">{fields.map((field) => <li key={field.path}><button className="field-button" aria-pressed={field.path === selectedPath} onClick={() => { setSelectedPath(field.path); setDraftValue(field.value); }} type="button"><span><span className="field-path">{field.path}</span><span className="field-value">{field.value || "Missing"}</span></span><span className={`field-status ${field.status}`}>{field.status.replace("_", " ")}</span></button></li>)}</ul>
             <div className="selected-field"><label htmlFor="field-value">Edit selected field</label><input id="field-value" value={draftValue} onChange={(event) => setDraftValue(event.target.value)} /><p className="selected-field-meta">Original: <strong>{selectedField.original || "Missing"}</strong><br />Evidence: <span className="evidence-link">{selectedField.evidence.map((evidence) => evidence.id).join(", ")}</span></p><div className="button-row"><button className="button" onClick={saveField} type="button">Save correction</button><button className="button secondary" onClick={() => setDraftValue(selectedField.value)} type="button">Reset</button></div></div>
           </section>
 
           <section className="panel issues-panel" aria-labelledby="issues-title">
             <div className="panel-header"><div><div className="panel-kicker">03 / policy gate</div><h2 className="panel-title" id="issues-title">Issues & rules</h2></div><span className="status-badge">deterministic</span></div>
+            <div className={`gate-summary ${gateState}`}><span className="gate-summary-icon" aria-hidden="true">{canPreview ? "✓" : "!"}</span><div><strong>{canPreview ? "Safe to compose a preview" : "Preview is blocked"}</strong><span>{canPreview ? "All current checks are satisfied." : "Resolve the active issue before release."}</span></div></div>
             {issue ? <div className={`issue-card ${issue.severity}`}><div className="issue-top"><span className="issue-code">{issue.code}</span><span className="issue-severity">{issue.severity}</span></div><p>{issue.message}</p>{issue.severity === "warning" ? <button className="button secondary" onClick={() => { setWarningAcknowledged(true); setReviewVersion((version) => version + 1); setPreview(null); }} type="button">Acknowledge warning</button> : <span className="safe-note">Resolve the field with evidence before preview.</span>}</div> : <div className="issue-card"><div className="issue-code">NO_ACTIVE_ISSUES</div><p>Required fields and tenant policy checks are clear.</p></div>}
             <div className="rule-card"><span className="rule-ref">sop:harborline:fulfillment:1 · effective 2026-01-01</span><h3>Harborline fulfillment intake policy</h3><p>Active customers, authorized origins, supported service levels and complete line items are required.</p></div>
             <button className="button secondary" onClick={() => { setReviewVersion((version) => version + 1); setPreview(null); }} type="button">Revalidate draft</button>
