@@ -259,7 +259,7 @@ cases and reports extraction, evidence, retrieval, safety and workflow metrics.
 - [Security checklist](docs/SECURITY_CHECKLIST.md)
 - [Operations runbook](docs/OPERATIONS_RUNBOOK.md)
 - [Portfolio case study](docs/portfolio/CASE_STUDY.md)
-- [150-second demo script](docs/portfolio/DEMO_SCRIPT.md)
+- [120-second demo script](docs/portfolio/DEMO_SCRIPT.md)
 - [Synthetic visual and video assets](docs/portfolio/assets/)
 
 The evaluation is reproducible with `make eval-fake`. Scores are synthetic

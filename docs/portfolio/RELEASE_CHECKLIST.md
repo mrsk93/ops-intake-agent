@@ -10,7 +10,7 @@
       recovery and evaluation states.
 - [x] Six browser PNG captures are included for the review, blocking, injection,
       preview, recovery and evaluation states.
-- [x] A 150-second synthetic WebM walkthrough is committed at
+- [x] An approximately 120-second synthetic WebM walkthrough is committed at
       `docs/portfolio/assets/demo.webm`.
 - [x] Fresh-clone `make release-check` rehearsal is documented and executable.
 - [x] No real client data, credentials, prompts or chain-of-thought are stored.
